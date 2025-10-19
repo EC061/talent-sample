@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+
+# Venv
+.venv/
+
+# Models
+.models/
+
+# Materials
+materials/
+
+# Datasets
+.datasets/
+
+# Server logs
+server_detail

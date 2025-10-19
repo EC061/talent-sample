@@ -1,0 +1,9 @@
+vllm>=0.11.0
+flashinfer-python>=0.2.3
+qwen-vl-utils==0.0.14
+transformers>=4.40.0
+huggingface-hub>=0.20.0
+torch>=2.1.0
+datasets
+pdf2image>=1.16.0
+Pillow>=10.0.0
