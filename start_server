@@ -199,5 +199,7 @@ vllm serve "$MODEL_PATH" \
     --seed "${VLLM_SEED:-0}" \
     --max-model-len "${VLLM_MAX_MODEL_LEN:-32768}" \
     --max-num-seqs "${VLLM_MAX_NUM_SEQS:-8}" \
-    --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION:-0.80}" 
+    --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION:-0.80}" \
+    --limit-mm-per-prompt.video 0
+    
 

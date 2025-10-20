@@ -1,5 +1,9 @@
 model:
-  name: "Qwen/Qwen3-VL-30B-A3B-Thinking"
+  # name: "Qwen/Qwen3-VL-30B-A3B-Thinking"
+  # name: "Qwen/Qwen3-VL-30B-Instruct"
+  # name: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+  # name: "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
+  name: "QuantTrio/Qwen3-VL-235B-A22B-Instruct-AWQ"
 
 server:
   host: "0.0.0.0"
@@ -17,8 +21,8 @@ vllm:
 
   # vLLM model parameters
   max_model_len: 131072
-  max_num_seqs: 8
-  gpu_memory_utilization: 0.85
+  max_num_seqs: 2
+  gpu_memory_utilization: 0.90
   seed: 1234
   mm_encoder_tp_mode: "data"
   enable_expert_parallel: true
