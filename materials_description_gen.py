@@ -6,59 +6,17 @@ This script reads processed materials and generates descriptions using a vision-
 """
 
 import os
-import csv
+import json
+import sqlite3
 import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import base64
 from openai import OpenAI
+from config_loader import load_config
 
 
-def load_config_env(config_path: str = "config.env") -> Dict[str, str]:
-    """
-    Load configuration from config.env file.
-    
-    Args:
-        config_path: Path to the config.env file
-        
-    Returns:
-        Dictionary of configuration values
-    """
-    config = {}
-    
-    # Try to find config.env in script directory
-    script_dir = Path(__file__).parent
-    config_file = script_dir / config_path
-    
-    if not config_file.exists():
-        print(f"Warning: {config_file} not found, using environment variables or defaults")
-        return config
-    
-    print(f"Loading configuration from {config_file}")
-    
-    with open(config_file, 'r') as f:
-        for line in f:
-            line = line.strip()
-            # Skip comments and empty lines
-            if not line or line.startswith('#'):
-                continue
-            # Parse KEY="VALUE" or KEY=VALUE
-            if '=' in line:
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
-                config[key] = value
-    
-    return config
-
-
-# Load config at module level
-_CONFIG = load_config_env()
+# Configuration is now loaded via dotenv at module level
 
 
 class MaterialsDescriptionGenerator:
@@ -80,24 +38,24 @@ class MaterialsDescriptionGenerator:
             model_name: Name of the model to use (defaults from config.env)
             timeout: Request timeout in seconds (defaults from config.env)
         """
-        # Get values from config.env or use provided values or fallback defaults
+        # Read configuration from YAML
+        cfg = load_config()
+        # Get values from YAML or use provided values or fallback defaults
         if api_base is None:
-            # Check if API_BASE_URL is set in config (for remote API usage)
-            api_base = _CONFIG.get('API_BASE_URL', '').strip()
-            # If not set or empty, construct from SERVER_HOST and SERVER_PORT (local server)
+            api_base = (cfg.get('api', {}).get('base_url') or '').strip()
             if not api_base:
-                server_host = _CONFIG.get('SERVER_HOST', '0.0.0.0')
-                server_port = _CONFIG.get('SERVER_PORT', '8000')
+                server_host = cfg.get('server', {}).get('host', '0.0.0.0')
+                server_port = cfg.get('server', {}).get('port', 8000)
                 api_base = f"http://{server_host}:{server_port}/v1"
-        
+
         if api_key is None:
-            api_key = _CONFIG.get('API_KEY', 'EMPTY')
-        
+            api_key = cfg.get('api', {}).get('key', 'EMPTY')
+
         if model_name is None:
-            model_name = _CONFIG.get('MODEL_NAME', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
-        
+            model_name = cfg.get('model', {}).get('name', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
+
         if timeout is None:
-            timeout = int(_CONFIG.get('API_TIMEOUT', '3600'))
+            timeout = int(cfg.get('api', {}).get('timeout', 3600))
         
         self.client = OpenAI(
             api_key=api_key,
@@ -164,49 +122,52 @@ class MaterialsDescriptionGenerator:
         
         return messages
     
-    def create_batch_messages_with_images(
+    def create_message_with_multiple_images(
         self,
         image_paths: List[str],
         prompt: str,
         use_url: bool = False
     ) -> List[Dict[str, Any]]:
         """
-        Create a batch of messages, each with one image for the API.
+        Create a message with multiple images for the API.
         
         Args:
             image_paths: List of paths to image files or URLs
-            prompt: Text prompt to send with each image
+            prompt: Text prompt to send with the images
             use_url: If True, treat image_paths as URLs; otherwise encode as base64
             
         Returns:
-            List of message dictionaries (one message per image)
+            List of message dictionaries
         """
-        messages = []
+        content = []
+        
+        # Add all images
         for image_path in image_paths:
             if use_url:
-                # Use URL directly
                 image_url = image_path
             else:
-                # Encode image as base64
                 base64_image = self.encode_image_to_base64(image_path)
                 image_url = f"data:image/jpeg;base64,{base64_image}"
             
-            message = {
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url
+                }
+            })
+        
+        # Add the prompt
+        content.append({
+            "type": "text",
+            "text": prompt
+        })
+        
+        messages = [
+            {
                 "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image_url
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
+                "content": content
             }
-            messages.append(message)
+        ]
         
         return messages
     
@@ -221,7 +182,8 @@ class MaterialsDescriptionGenerator:
         max_tokens: Optional[int] = None,
         use_url: bool = False,
         verbose: bool = False,
-        return_metrics: bool = False
+        return_metrics: bool = False,
+        guided_json: Optional[Dict[str, Any]] = None
     ) -> str | Dict[str, Any]:
         """
         Generate a description for an image using streaming with usage tracking.
@@ -242,21 +204,25 @@ class MaterialsDescriptionGenerator:
             Generated description text, or dict with 'content' and 'metrics' if return_metrics=True
         """
         # Use config values if not provided
+        cfg = load_config()
         if temperature is None:
-            temperature = float(_CONFIG.get('GENERATION_TEMPERATURE', '0.6'))
+            temperature = float(cfg.get('generation', {}).get('temperature', 0.6))
         if top_p is None:
-            top_p = float(_CONFIG.get('GENERATION_TOP_P', '0.95'))
+            top_p = float(cfg.get('generation', {}).get('top_p', 0.95))
         if top_k is None:
-            top_k = int(_CONFIG.get('GENERATION_TOP_K', '20'))
+            top_k = int(cfg.get('generation', {}).get('top_k', 20))
         if presence_penalty is None:
-            presence_penalty = float(_CONFIG.get('GENERATION_PRESENCE_PENALTY', '0.0'))
+            presence_penalty = float(cfg.get('generation', {}).get('presence_penalty', 0.0))
         if max_tokens is None:
-            max_tokens = int(_CONFIG.get('GENERATION_MAX_TOKENS', '4096'))
+            max_tokens = int(cfg.get('generation', {}).get('max_tokens', 4096))
         
         messages = self.create_message_with_image(image_path, prompt, use_url=use_url)
         
         try:
             start_time = time.time()
+            extra_body = {"top_k": top_k}
+            if guided_json is not None:
+                extra_body["guided_json"] = guided_json
             stream = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
@@ -264,7 +230,7 @@ class MaterialsDescriptionGenerator:
                 top_p=top_p,
                 presence_penalty=presence_penalty,
                 max_tokens=max_tokens,
-                extra_body={"top_k": top_k},
+                extra_body=extra_body,
                 stream=True,
                 stream_options={"include_usage": True}
             )
@@ -322,190 +288,128 @@ class MaterialsDescriptionGenerator:
             print(f"Error generating description: {e}")
             raise
     
-    def generate_batch_descriptions(
+    def process_materials_db(
         self,
-        image_paths: List[str],
-        prompt: str,
-        temperature: Optional[float] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        use_url: bool = False,
-        verbose: bool = False,
-        return_metrics: bool = False
-    ) -> List[str] | Dict[str, Any]:
-        """
-        Generate descriptions for multiple images in a single request using streaming with usage tracking.
-        
-        Args:
-            image_paths: List of paths to image files or URLs
-            prompt: Text prompt describing what to generate
-            temperature: Sampling temperature (0.0 to 2.0, defaults from config.env)
-            top_p: Nucleus sampling parameter (defaults from config.env)
-            top_k: Top-k sampling parameter (defaults from config.env)
-            presence_penalty: Presence penalty (-2.0 to 2.0, defaults from config.env)
-            max_tokens: Maximum number of tokens to generate (defaults from config.env)
-            use_url: If True, treat image_paths as URLs
-            verbose: If True, print timing information
-            return_metrics: If True, return dict with content and metrics
-            
-        Returns:
-            List of generated description texts, or dict with 'content' and 'metrics' if return_metrics=True
-        """
-        # Use config values if not provided
-        if temperature is None:
-            temperature = float(_CONFIG.get('GENERATION_TEMPERATURE', '0.6'))
-        if top_p is None:
-            top_p = float(_CONFIG.get('GENERATION_TOP_P', '0.95'))
-        if top_k is None:
-            top_k = int(_CONFIG.get('GENERATION_TOP_K', '50'))
-        if presence_penalty is None:
-            presence_penalty = float(_CONFIG.get('GENERATION_PRESENCE_PENALTY', '0.0'))
-        if max_tokens is None:
-            max_tokens = int(_CONFIG.get('GENERATION_MAX_TOKENS', '4096'))
-        
-        messages = self.create_batch_messages_with_images(image_paths, prompt, use_url=use_url)
-        
-        try:
-            start_time = time.time()
-            stream = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                top_p=top_p,
-                presence_penalty=presence_penalty,
-                max_tokens=max_tokens,
-                extra_body={"top_k": top_k},
-                stream=True,
-                stream_options={"include_usage": True}
-            )
-            
-            content = ""
-            first_token_time = None
-            prompt_tokens = 0
-            completion_tokens = 0
-            total_tokens = 0
-            
-            for chunk in stream:
-                # Track time to first token
-                if first_token_time is None and chunk.choices and len(chunk.choices) > 0:
-                    if chunk.choices[0].delta.content:
-                        first_token_time = time.time()
-                
-                # Collect content
-                if chunk.choices and len(chunk.choices) > 0:
-                    delta = chunk.choices[0].delta
-                    if delta.content:
-                        content += delta.content
-                
-                # Extract usage information (typically in the last chunk)
-                if hasattr(chunk, 'usage') and chunk.usage:
-                    prompt_tokens = chunk.usage.prompt_tokens
-                    completion_tokens = chunk.usage.completion_tokens
-                    total_tokens = chunk.usage.total_tokens
-            
-            end_time = time.time()
-            total_time = end_time - start_time
-            ttft = first_token_time - start_time if first_token_time else 0
-            generation_time = end_time - first_token_time if first_token_time else total_time
-            
-            # Calculate throughput metrics
-            metrics = {
-                'prompt_tokens': prompt_tokens,
-                'completion_tokens': completion_tokens,
-                'total_tokens': total_tokens,
-                'total_time': total_time,
-                'ttft': ttft,
-                'generation_time': generation_time,
-                'pp_per_sec': prompt_tokens / ttft if ttft > 0 else 0,
-                'tg_per_sec': completion_tokens / generation_time if generation_time > 0 else 0,
-                'num_images': len(image_paths)
-            }
-            
-            if return_metrics:
-                return {
-                    'content': content,
-                    'metrics': metrics
-                }
-            
-            return content
-        
-        except Exception as e:
-            print(f"Error generating batch descriptions: {e}")
-            raise
-    
-    def process_materials_csv(
-        self,
-        csv_path: Optional[str] = None,
+        db_path: Optional[str] = None,
         materials_dir: Optional[str] = None,
-        output_csv_path: Optional[str] = None,
         prompt_template: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        benchmark_mode: bool = True
+        batch_size: Optional[int] = None
     ):
         """
-        Process all materials from CSV and generate descriptions, with optional performance benchmarking.
+        Process all materials from SQLite database and generate descriptions.
+        Handles both individual page rows and batch "all" rows.
         
         Args:
-            csv_path: Path to the CSV file with materials list (defaults from config.env)
+            db_path: Path to the SQLite database file (defaults from config.env)
             materials_dir: Directory containing the processed material images (defaults from config.env)
-            output_csv_path: Path to save updated CSV (defaults to input path)
             prompt_template: Custom prompt template (uses default or from config.env if None)
-            batch_size: Number of images to process in each batch request (defaults from config.env)
-            benchmark_mode: If True, run both single and batch inference to compare performance
+            batch_size: Number of images to process in each request (defaults from config.env)
         """
         # Use config values if not provided
-        if csv_path is None:
-            csv_path = _CONFIG.get('MATERIALS_CSV_PATH', 'materials/processed_materials.csv')
-        
+        cfg = load_config()
+        if db_path is None:
+            db_path = cfg.get('paths', {}).get('materials_db_path', 'materials/processed_materials.db')
+
         if materials_dir is None:
-            materials_dir = _CONFIG.get('MATERIALS_DIR', 'materials/processed')
-        
+            materials_dir = cfg.get('paths', {}).get('materials_dir', 'materials/processed')
+
         if batch_size is None:
-            batch_size = int(_CONFIG.get('BATCH_SIZE', '10'))
+            batch_size = int(cfg.get('batch', {}).get('size', 10))
         
-        if output_csv_path is None:
-            output_csv_path = csv_path
+        # Load prompt templates:
+        # 1) Explicit function arg overrides everything
+        # 2) Otherwise prefer PROMPT_TEMPLATE_SINGLE for per-page and PROMPT_TEMPLATE_BATCH for batch
+        # 3) Fallback to legacy PROMPT_TEMPLATE, then to built-in defaults
+        legacy_prompt = None
+        single_prompt_default = (
+            "Return only a JSON object with fields exactly: needed (boolean), key_concept (string), description (string). "
+            "Rules: needed=true only if the page teaches a substantive concept, method, worked example, or definition. "
+            "Mark needed=false for pages that are: title/cover, course schedule/timeline, syllabus outline, table of contents, announcements, logistics (deadlines, office hours, emails), exam/quiz information, instructions to reflect/prepare, grading/policies, decorative/quote/blank pages, single-panel comics or cartoons, inspirational quotes, and high-level overview/agenda slides that summarize sections without teaching details. "
+            "key_concept is a 2-6 word phrase naming the primary concept taught on this page; if multiple topics appear, choose the most central. "
+            "description is 1-2 short sentences defining the concept and what a student needs to know to answer multiple-choice questions about it; keep under 40 words; plain text; no lists; ignore headers/footers and long OCR passages. Output JSON only with no extra text."
+        )
+        batch_prompt_default = (
+            "Return only a JSON object with fields exactly: key_concept (array of 5 strings), description (string). Do not include a needed field. "
+            "The selected pages will already exclude administrative content (title, schedule, announcements, logistics, exam info, syllabus/TOC). "
+            "Rules: key_concept must contain exactly five phrases (each 2-6 words) capturing the main concepts covered across the selected pages. "
+            "description is 3-4 sentences summarizing the overall topic, key ideas, and typical problem types or skills assessed; concise, <=100 words; plain text; no bullets; avoid page-level details. Output JSON only with no extra text."
+        )
+        cfg = load_config()
+        single_prompt_from_env = cfg.get('prompts', {}).get('single') or legacy_prompt or single_prompt_default
+        batch_prompt_from_env = cfg.get('prompts', {}).get('batch') or legacy_prompt or batch_prompt_default
+        # If caller provided a prompt_template, use it for both modes (explicit override)
+        if prompt_template is not None:
+            single_prompt_from_env = prompt_template
+            batch_prompt_from_env = prompt_template
         
-        if prompt_template is None:
-            prompt_template = _CONFIG.get('PROMPT_TEMPLATE')
-        
-        if prompt_template is None:
-            prompt_template = (
-                "Analyze this educational material image and provide a detailed description. "
-                "Include: 1) The main topic or subject, 2) Key concepts or formulas shown, "
-                "3) Any diagrams, graphs, or visual elements, 4) The educational level "
-                "(e.g., high school physics, college calculus). Be specific and concise."
-            )
-        
-        # Read CSV
-        csv_path_obj = Path(csv_path)
+        # Connect to database
+        db_path_obj = Path(db_path)
         materials_dir_obj = Path(materials_dir)
         
-        if not csv_path_obj.exists():
-            print(f"Error: CSV file not found at {csv_path}")
+        if not db_path_obj.exists():
+            print(f"Error: Database file not found at {db_path}")
             return
         
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        # Ensure schema has needed columns (idempotent migration)
+        try:
+            cursor.execute('PRAGMA table_info(materials)')
+            cols = [r[1] for r in cursor.fetchall()]
+            if 'needed' not in cols:
+                cursor.execute('ALTER TABLE materials ADD COLUMN needed INTEGER')
+            if 'key_concept' not in cols:
+                cursor.execute('ALTER TABLE materials ADD COLUMN key_concept TEXT')
+            conn.commit()
+        except Exception:
+            pass
+        
+        # Read all materials from database
+        cursor.execute('SELECT id, original_filename, current_filename, status, description, needed, key_concept FROM materials')
         rows = []
-        with open(csv_path_obj, 'r', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile)
-            rows = list(reader)
+        for row in cursor.fetchall():
+            rows.append({
+                'id': row[0],
+                'original_filename': row[1],
+                'current_filename': row[2],
+                'status': row[3] or '',
+                'description': row[4] or '',
+                'needed': row[5] if row[5] is not None else None,
+                'key_concept': row[6] or ''
+            })
         
         print(f"Found {len(rows)} materials to process")
         
         # Collect metrics
-        single_metrics = []
-        batch_metrics = []
+        all_metrics = []
         
-        # Filter rows that need processing
+        # First pass: identify all "all" rows to build batch_rows mapping
+        batch_rows = {}  # Map of original_filename -> {'all_row_idx': idx, 'page_indices': []}
+        
+        for idx, row in enumerate(rows):
+            if row['current_filename'] == 'all':
+                original_filename = row['original_filename']
+                # Skip if already processed
+                if row.get('status') == 'processed' and row.get('description'):
+                    continue
+                batch_rows[original_filename] = {'all_row_idx': idx, 'page_indices': []}
+        
+        # Second pass: identify individual page rows and link them to batch rows
         rows_to_process = []
+        
         for idx, row in enumerate(rows):
             # Skip if already processed
             if row.get('status') == 'processed' and row.get('description'):
                 continue
             
             current_filename = row['current_filename']
+            original_filename = row['original_filename']
+            
+            # Skip "all" rows in this pass - we'll handle them separately
+            if current_filename == 'all':
+                continue
+            
+            # This is an individual page row
             image_path = materials_dir_obj / current_filename
             
             if not image_path.exists():
@@ -514,98 +418,227 @@ class MaterialsDescriptionGenerator:
                 row['description'] = 'Image file not found'
                 continue
             
-            rows_to_process.append((idx, row, image_path))
-        
-        print(f"Need to process {len(rows_to_process)} materials")
-        
-        # BENCHMARK MODE: Run single inference first
-        if benchmark_mode and len(rows_to_process) > 0:
-            print("\n" + "="*80)
-            print("BENCHMARK: Single Inference Mode")
-            print("="*80)
+            rows_to_process.append((idx, row, image_path, 'individual'))
             
-            for idx, (_, row, image_path) in enumerate(rows_to_process):
-                print(f"\n[Single {idx+1}/{len(rows_to_process)}] Processing: {row['current_filename']}")
+            # Track this page for batch processing if an "all" row exists
+            if original_filename in batch_rows:
+                batch_rows[original_filename]['page_indices'].append(idx)
+        
+        # Third pass: prepare batch rows for processing
+        for original_filename, batch_info in batch_rows.items():
+            all_row_idx = batch_info['all_row_idx']
+            page_indices = batch_info['page_indices']
+            
+            if page_indices:
+                # Defer filtering based on 'needed' until after individual processing
+                rows_to_process.append((all_row_idx, rows[all_row_idx], page_indices, 'batch'))
+        
+        print(f"Need to process {len(rows_to_process)} tasks (including batch tasks)")
+        
+        # Process materials
+        print("\n" + "="*80)
+        print("Processing Materials")
+        print("="*80)
+        
+        for task_idx, (row_idx, row, data, task_type) in enumerate(rows_to_process):
+            if task_type == 'individual':
+                image_path = data
+                print(f"\n[{task_idx+1}/{len(rows_to_process)}] Processing (individual): {row['current_filename']}")
                 
                 try:
+                    # Structured output schema for single page
+                    single_schema = {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "needed": {"type": "boolean"},
+                            "key_concept": {"type": "string"},
+                            "description": {"type": "string"}
+                        },
+                        "required": ["needed", "key_concept", "description"]
+                    }
                     result = self.generate_description(
                         str(image_path),
-                        prompt_template,
+                        single_prompt_from_env,
                         use_url=False,
                         return_metrics=True,
-                        verbose=False
+                        verbose=True,
+                        guided_json=single_schema
                     )
                     
+                    # Parse structured content
+                    content_text = result['content']
+                    try:
+                        parsed = json.loads(content_text)
+                    except Exception as parse_err:
+                        raise ValueError(f"Failed to parse JSON: {parse_err}; content: {content_text}")
+                    description = parsed.get('description', '')
+                    key_concept = parsed.get('key_concept', '')
+                    needed_val = parsed.get('needed', None)
                     metrics = result['metrics']
-                    single_metrics.append(metrics)
+                    
+                    all_metrics.append(metrics)
+                    
+                    row['status'] = 'processed'
+                    row['description'] = description
+                    row['key_concept'] = key_concept
+                    # Normalize needed to 0/1/None
+                    if isinstance(needed_val, bool):
+                        row['needed'] = 1 if needed_val else 0
+                    elif needed_val in (0, 1):
+                        row['needed'] = int(needed_val)
+                    else:
+                        row['needed'] = None
                     
                     print(f"  ✓ PP: {metrics['prompt_tokens']}, TG: {metrics['completion_tokens']}")
                     print(f"  ✓ TTFT: {metrics['ttft']:.3f}s, TG/sec: {metrics['tg_per_sec']:.2f}, PP/sec: {metrics['pp_per_sec']:.2f}")
                     
                 except Exception as e:
                     print(f"  ✗ Error: {e}")
-        
-        # BATCH MODE: Process in batches (always run this to get results for CSV)
-        print("\n" + "="*80)
-        print("BENCHMARK: Batch Inference Mode" if benchmark_mode else "Batch Processing")
-        print("="*80)
-        
-        total_batches = (len(rows_to_process) + batch_size - 1) // batch_size
-        
-        for batch_idx in range(0, len(rows_to_process), batch_size):
-            batch = rows_to_process[batch_idx:batch_idx + batch_size]
-            batch_num = batch_idx // batch_size + 1
-            
-            # Prepare batch data
-            batch_image_paths = [str(item[2]) for item in batch]
-            batch_rows = [item[1] for item in batch]
-            batch_indices = [item[0] for item in batch]
-            
-            print(f"\n[Batch {batch_num}/{total_batches}] Processing {len(batch)} images...")
-            for item in batch:
-                print(f"  - {item[1]['current_filename']}")
-            
-            try:
-                result = self.generate_batch_descriptions(
-                    batch_image_paths,
-                    prompt_template,
-                    use_url=False,
-                    return_metrics=True,
-                    verbose=False
-                )
-                
-                description = result['content']
-                metrics = result['metrics']
-                
-                # Split the description for each image (if model returns combined text)
-                # For now, we'll assume the model returns one combined response
-                # You may need to adjust this based on your model's actual response format
-                
-                # Mark all in batch as processed with the same description
-                # In practice, you might want to parse the response to separate descriptions
-                for row in batch_rows:
-                    row['status'] = 'processed'
-                    row['description'] = description
-                
-                batch_metrics.append(metrics)
-                
-                print(f"  ✓ PP: {metrics['prompt_tokens']}, TG: {metrics['completion_tokens']}")
-                print(f"  ✓ TTFT: {metrics['ttft']:.3f}s, TG/sec: {metrics['tg_per_sec']:.2f}, PP/sec: {metrics['pp_per_sec']:.2f}")
-                
-            except Exception as e:
-                print(f"  ✗ Error: {e}")
-                for row in batch_rows:
                     row['status'] = 'error'
                     row['description'] = str(e)
+                    row['needed'] = None
+                    row['key_concept'] = row.get('key_concept', '')
+            
+            elif task_type == 'batch':
+                page_indices = data
+                original_filename = row['original_filename']
+                # Filter pages by needed == true (1)
+                filtered_image_paths = []
+                for page_idx in page_indices:
+                    page_row = rows[page_idx]
+                    if page_row.get('needed') in (1, True):
+                        img_path = materials_dir_obj / page_row['current_filename']
+                        if img_path.exists():
+                            filtered_image_paths.append(str(img_path))
+                print(f"\n[{task_idx+1}/{len(rows_to_process)}] Processing (batch, {len(filtered_image_paths)} images): {original_filename}")
+                
+                try:
+                    if not filtered_image_paths:
+                        row['status'] = 'processed'
+                        row['description'] = ''
+                        row['key_concept'] = json.dumps([])
+                        row['needed'] = None
+                        print("  ✓ No relevant pages selected (needed==false for all).")
+                        continue
+                    # Create message with multiple images
+                    messages = self.create_message_with_multiple_images(
+                        filtered_image_paths,
+                        batch_prompt_from_env,
+                        use_url=False
+                    )
+                    
+                    # Generate description for batch
+                    start_time = time.time()
+                    cfg = load_config()
+                    extra_body = {
+                        "top_k": int(cfg.get('generation', {}).get('top_k', 20)),
+                        "guided_json": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "key_concept": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "minItems": 5,
+                                    "maxItems": 5
+                                },
+                                "description": {"type": "string"}
+                            },
+                            "required": ["key_concept", "description"]
+                        }
+                    }
+                    stream = self.client.chat.completions.create(
+                        model=self.model_name,
+                        messages=messages,
+                        temperature=float(cfg.get('generation', {}).get('temperature', 0.6)),
+                        top_p=float(cfg.get('generation', {}).get('top_p', 0.95)),
+                        presence_penalty=float(cfg.get('generation', {}).get('presence_penalty', 0.0)),
+                        max_tokens=int(cfg.get('generation', {}).get('max_tokens', 4096)),
+                        extra_body=extra_body,
+                        stream=True,
+                        stream_options={"include_usage": True}
+                    )
+                    
+                    content = ""
+                    first_token_time = None
+                    prompt_tokens = 0
+                    completion_tokens = 0
+                    total_tokens = 0
+                    
+                    for chunk in stream:
+                        # Track time to first token
+                        if first_token_time is None and chunk.choices and len(chunk.choices) > 0:
+                            if chunk.choices[0].delta.content:
+                                first_token_time = time.time()
+                        
+                        # Collect content
+                        if chunk.choices and len(chunk.choices) > 0:
+                            delta = chunk.choices[0].delta
+                            if delta.content:
+                                content += delta.content
+                        
+                        # Extract usage information
+                        if hasattr(chunk, 'usage') and chunk.usage:
+                            prompt_tokens = chunk.usage.prompt_tokens
+                            completion_tokens = chunk.usage.completion_tokens
+                            total_tokens = chunk.usage.total_tokens
+                    
+                    end_time = time.time()
+                    total_time = end_time - start_time
+                    ttft = first_token_time - start_time if first_token_time else 0
+                    generation_time = end_time - first_token_time if first_token_time else total_time
+                    
+                    # Calculate metrics
+                    metrics = {
+                        'prompt_tokens': prompt_tokens,
+                        'completion_tokens': completion_tokens,
+                        'total_tokens': total_tokens,
+                        'total_time': total_time,
+                        'ttft': ttft,
+                        'generation_time': generation_time,
+                        'pp_per_sec': prompt_tokens / ttft if ttft > 0 else 0,
+                        'tg_per_sec': completion_tokens / generation_time if generation_time > 0 else 0,
+                    }
+                    
+                    all_metrics.append(metrics)
+                    
+                    # Parse structured JSON
+                    try:
+                        parsed = json.loads(content)
+                    except Exception as parse_err:
+                        raise ValueError(f"Failed to parse JSON: {parse_err}; content: {content}")
+                    row['status'] = 'processed'
+                    row['description'] = parsed.get('description', '')
+                    row['key_concept'] = json.dumps(parsed.get('key_concept', []))
+                    row['needed'] = None
+                    
+                    print(f"  ✓ Batch processed: {len(filtered_image_paths)} images")
+                    print(f"  ✓ PP: {metrics['prompt_tokens']}, TG: {metrics['completion_tokens']}")
+                    print(f"  ✓ TTFT: {metrics['ttft']:.3f}s, TG/sec: {metrics['tg_per_sec']:.2f}, PP/sec: {metrics['pp_per_sec']:.2f}")
+                    
+                except Exception as e:
+                    print(f"  ✗ Error: {e}")
+                    row['status'] = 'error'
+                    row['description'] = str(e)
+                    row['key_concept'] = json.dumps([])
+                    row['needed'] = None
         
-        # Write updated CSV
-        with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['original_filename', 'current_filename', 'status', 'description']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
+        # Update database with results
+        for row in rows:
+            needed_val = row.get('needed')
+            if isinstance(needed_val, bool):
+                needed_val = 1 if needed_val else 0
+            cursor.execute('''
+                UPDATE materials 
+                SET status = ?, description = ?, needed = ?, key_concept = ?
+                WHERE id = ?
+            ''', (row.get('status', ''), row.get('description', ''), needed_val, row.get('key_concept', ''), row['id']))
         
-        print(f"\n✓ Updated CSV saved to: {output_csv_path}")
+        conn.commit()
+        conn.close()
+        
+        print(f"\n✓ Updated database saved to: {db_path}")
         
         # Print summary
         processed = sum(1 for row in rows if row['status'] == 'processed')
@@ -617,75 +650,37 @@ class MaterialsDescriptionGenerator:
         print(f"Successfully processed: {processed}")
         print(f"Errors: {errors}")
         print(f"Batch size: {batch_size}")
-        print(f"Total batches: {total_batches}")
+        print(f"Total batches: 1 (single inference)")
         
         # Print benchmark comparison if both modes were run
-        if benchmark_mode and single_metrics and batch_metrics:
+        if all_metrics:
             print(f"\n" + "="*80)
-            print("PERFORMANCE COMPARISON")
+            print("PERFORMANCE METRICS")
             print("="*80)
             
-            # Single inference metrics
-            single_total_time = sum(m['total_time'] for m in single_metrics)
-            single_total_gen_time = sum(m['generation_time'] for m in single_metrics)
-            single_avg_ttft = sum(m['ttft'] for m in single_metrics) / len(single_metrics)
-            single_avg_tg_per_sec = sum(m['tg_per_sec'] for m in single_metrics) / len(single_metrics)
-            single_avg_pp_per_sec = sum(m['pp_per_sec'] for m in single_metrics) / len(single_metrics)
-            single_total_pp = sum(m['prompt_tokens'] for m in single_metrics)
-            single_total_tg = sum(m['completion_tokens'] for m in single_metrics)
+            total_time = sum(m['total_time'] for m in all_metrics)
+            total_gen_time = sum(m['generation_time'] for m in all_metrics)
+            avg_ttft = sum(m['ttft'] for m in all_metrics) / len(all_metrics)
+            avg_tg_per_sec = sum(m['tg_per_sec'] for m in all_metrics) / len(all_metrics)
+            avg_pp_per_sec = sum(m['pp_per_sec'] for m in all_metrics) / len(all_metrics)
+            total_pp = sum(m['prompt_tokens'] for m in all_metrics)
+            total_tg = sum(m['completion_tokens'] for m in all_metrics)
             
-            # Batch inference metrics
-            batch_total_time = sum(m['total_time'] for m in batch_metrics)
-            batch_total_gen_time = sum(m['generation_time'] for m in batch_metrics)
-            batch_avg_ttft = sum(m['ttft'] for m in batch_metrics) / len(batch_metrics)
-            batch_avg_tg_per_sec = sum(m['tg_per_sec'] for m in batch_metrics) / len(batch_metrics)
-            batch_avg_pp_per_sec = sum(m['pp_per_sec'] for m in batch_metrics) / len(batch_metrics)
-            batch_total_pp = sum(m['prompt_tokens'] for m in batch_metrics)
-            batch_total_tg = sum(m['completion_tokens'] for m in batch_metrics)
-            
-            print(f"\n{'Metric':<30} {'Single Inference':<25} {'Batch Inference':<25} {'Speedup':<15}")
-            print("-" * 95)
-            print(f"{'Total requests':<30} {len(single_metrics):<25} {len(batch_metrics):<25} {'-':<15}")
-            print(f"{'Total PP tokens':<30} {single_total_pp:<25} {batch_total_pp:<25} {'-':<15}")
-            print(f"{'Total TG tokens':<30} {single_total_tg:<25} {batch_total_tg:<25} {'-':<15}")
-            print(f"{'Total time (s)':<30} {single_total_time:<25.2f} {batch_total_time:<25.2f} {single_total_time/batch_total_time:<15.2f}x")
-            print(f"{'Total generation time (s)':<30} {single_total_gen_time:<25.2f} {batch_total_gen_time:<25.2f} {single_total_gen_time/batch_total_gen_time:<15.2f}x")
-            print(f"{'Avg TTFT (s)':<30} {single_avg_ttft:<25.3f} {batch_avg_ttft:<25.3f} {single_avg_ttft/batch_avg_ttft:<15.2f}x")
-            print(f"{'Avg TG/sec (tokens/s)':<30} {single_avg_tg_per_sec:<25.2f} {batch_avg_tg_per_sec:<25.2f} {batch_avg_tg_per_sec/single_avg_tg_per_sec:<15.2f}x")
-            print(f"{'Avg PP/sec (tokens/s)':<30} {single_avg_pp_per_sec:<25.2f} {batch_avg_pp_per_sec:<25.2f} {batch_avg_pp_per_sec/single_avg_pp_per_sec:<15.2f}x")
-            
-            print(f"\n{'Key Insights:'}")
-            print(f"  • Batch mode is {single_total_time/batch_total_time:.2f}x faster overall")
-            print(f"  • Batch mode achieves {batch_avg_tg_per_sec/single_avg_tg_per_sec:.2f}x higher token generation throughput")
-            print(f"  • Total time saved: {single_total_time - batch_total_time:.2f}s ({(1 - batch_total_time/single_total_time)*100:.1f}% reduction)")
-            
-        elif batch_metrics:
-            # Only batch metrics available
-            print(f"\n" + "="*80)
-            print("BATCH MODE PERFORMANCE METRICS")
-            print("="*80)
-            
-            batch_total_time = sum(m['total_time'] for m in batch_metrics)
-            batch_total_gen_time = sum(m['generation_time'] for m in batch_metrics)
-            batch_avg_ttft = sum(m['ttft'] for m in batch_metrics) / len(batch_metrics)
-            batch_avg_tg_per_sec = sum(m['tg_per_sec'] for m in batch_metrics) / len(batch_metrics)
-            batch_avg_pp_per_sec = sum(m['pp_per_sec'] for m in batch_metrics) / len(batch_metrics)
-            batch_total_pp = sum(m['prompt_tokens'] for m in batch_metrics)
-            batch_total_tg = sum(m['completion_tokens'] for m in batch_metrics)
-            
-            print(f"Total prefill tokens (PP): {batch_total_pp}")
-            print(f"Total generation tokens (TG): {batch_total_tg}")
-            print(f"Total processing time: {batch_total_time:.2f}s")
-            print(f"Total generation time: {batch_total_gen_time:.2f}s")
-            print(f"Average TTFT: {batch_avg_ttft:.3f}s")
-            print(f"Average TG/sec: {batch_avg_tg_per_sec:.2f} tokens/s")
-            print(f"Average PP/sec: {batch_avg_pp_per_sec:.2f} tokens/s")
+            print(f"\n{'Metric':<30}    ")
+            print("-" * 55)
+            print(f"{'Total requests':<30} {len(all_metrics)}")
+            print(f"{'Total PP tokens':<30} {total_pp}")
+            print(f"{'Total TG tokens':<30} {total_tg}")
+            print(f"{'Total time (s)':<30} {total_time:.2f}")
+            print(f"{'Total generation time (s)':<30} {total_gen_time:.2f}")
+            print(f"{'Avg TTFT (s)':<30} {avg_ttft:.3f}")
+            print(f"{'Avg TG/sec (tokens/s)':<30} {avg_tg_per_sec:.2f}")
+            print(f"{'Avg PP/sec (tokens/s)':<30} {avg_pp_per_sec:.2f}")
 
 
 def main():
     """Main function to demonstrate usage."""
-    # Initialize generator with OpenAI-compatible endpoint
-    # All parameters will be loaded from config.env
+    # Initialize generator with OpenAI-compatible endpoint using YAML config
     generator = MaterialsDescriptionGenerator()
     
     # # Example 1: Single image with URL and metrics reporting
@@ -699,9 +694,8 @@ def main():
     #     return_metrics=True
     # )
     
-    # Example 2: Process all materials from CSV
-    # All parameters will be loaded from config.env
-    generator.process_materials_csv()
+    # Example 2: Process all materials from database (params loaded from YAML)
+    generator.process_materials_db()
 
 
 if __name__ == "__main__":

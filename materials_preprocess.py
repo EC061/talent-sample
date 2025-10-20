@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
 """
-Process PDF materials into individual page images and create a CSV manifest.
+Process PDF materials into individual page images and create a SQLite database manifest.
 """
 
 import os
-import csv
+import sqlite3
 import shutil
 from pathlib import Path
 from pdf2image import convert_from_path
+from config_loader import load_config
 
 def process_pdfs():
-    # Define directories
-    pdf_dir = Path("materials/pdf")
-    output_dir = Path("materials/processed")
-    csv_path = Path("materials/processed_materials.csv")
+    # Load configuration from YAML
+    cfg = load_config()
+    # Define directories from YAML config (with safe defaults)
+    pdf_dir = Path(cfg.get('paths', {}).get('pdf_dir', "materials/pdf"))
+    output_dir = Path(cfg.get('paths', {}).get('materials_dir', "materials/processed"))
+    db_path = Path(cfg.get('paths', {}).get('materials_db_path', "materials/processed_materials.db"))
     
     # Clean up previous processed data if it exists
     if output_dir.exists():
         print(f"Removing previous processed folder: {output_dir}")
         shutil.rmtree(output_dir)
     
-    if csv_path.exists():
-        print(f"Removing previous CSV file: {csv_path}")
-        csv_path.unlink()
+    if db_path.exists():
+        print(f"Removing previous database file: {db_path}")
+        db_path.unlink()
     
     # Create output directory if it doesn't exist
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -50,8 +53,23 @@ def process_pdfs():
     
     print(f"Found {len(pdf_files)} PDF files to process")
     
-    # Prepare CSV data
-    csv_data = []
+    # Create database and table
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create table with the same four columns as the original CSV structure
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS materials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_filename TEXT NOT NULL,
+            current_filename TEXT NOT NULL,
+            status TEXT,
+            description TEXT,
+            needed INTEGER,
+            key_concept TEXT
+        )
+    ''')
+    conn.commit()
     
     # Process each PDF
     for pdf_path in pdf_files:
@@ -75,33 +93,38 @@ def process_pdfs():
                 # Save image
                 image.save(str(output_path), "JPEG", quality=95)
                 
-                # Add to CSV data
-                csv_data.append({
-                    'original_filename': pdf_path.name,
-                    'current_filename': output_filename,
-                    'status': '',
-                    'description': ''
-                })
+                # Insert into database
+                cursor.execute('''
+                    INSERT INTO materials (original_filename, current_filename, status, description, needed, key_concept)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (pdf_path.name, output_filename, '', '', None, ''))
                 
                 print(f"  ✓ Saved: {output_filename}")
         
         except Exception as e:
             print(f"  ✗ Error processing {pdf_path.name}: {e}")
-    
-    # Write CSV file
-    if csv_data:
-        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['original_filename', 'current_filename', 'status', 'description']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            
-            writer.writeheader()
-            writer.writerows(csv_data)
         
-        print(f"\n✓ CSV manifest created: {csv_path}")
-        print(f"✓ Total images created: {len(csv_data)}")
+        # Add summary row for this file
+        cursor.execute('''
+            INSERT INTO materials (original_filename, current_filename, status, description, needed, key_concept)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (pdf_path.name, 'all', '', '', None, ''))
+    
+    # Commit changes and close database
+    conn.commit()
+    
+    # Get count of inserted records
+    cursor.execute('SELECT COUNT(*) FROM materials')
+    record_count = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    if record_count > 0:
+        print(f"\n✓ Database created: {db_path}")
+        print(f"✓ Total records created: {record_count}")
         print(f"✓ Images saved to: {output_dir}")
     else:
-        print("\n✗ No images were created")
+        print("\n✗ No records were created")
 
 if __name__ == "__main__":
     process_pdfs()
