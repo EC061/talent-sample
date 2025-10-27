@@ -137,15 +137,13 @@ if [ ! -d "$MODEL_PATH" ] || [ -z "$(ls -A "$MODEL_PATH" 2>/dev/null)" ]; then
     mkdir -p "$MODEL_PATH"
     
     # Download the model using Hugging Face CLI
-    huggingface-cli download "$MODEL_NAME" \
-        --local-dir "$MODEL_PATH" \
-        --local-dir-use-symlinks False \
-        --resume-download
+    hf download "$MODEL_NAME" \
+        --local-dir "$MODEL_PATH"
     
     if [ $? -ne 0 ]; then
         echo ""
         echo "Error: Failed to download model"
-        echo "Make sure you have huggingface-cli installed: pip install huggingface-hub"
+        echo "Make sure you have huggingface-hub installed: pip install huggingface-hub"
         echo "You may also need to login: huggingface-cli login"
         exit 1
     fi
