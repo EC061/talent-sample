@@ -9,10 +9,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_YML="$SCRIPT_DIR/config.yml"
 
 if [ -f "$CONFIG_YML" ]; then
-    echo "Loading configuration from $CONFIG_YML"
+    echo "Loading VLM configuration from $CONFIG_YML"
     # Export variables derived from YAML (without persisting in env files)
     # shellcheck disable=SC2046
-    eval "$(python3 "$SCRIPT_DIR/print_config_env.py")"
+    eval "$(python3 "$SCRIPT_DIR/config_loader.py" vlm)"
 else
     echo "Warning: config.yml not found at $CONFIG_YML, using hardcoded defaults"
 fi
@@ -156,7 +156,7 @@ if [ ! -d "$MODEL_PATH" ] || [ -z "$(ls -A "$MODEL_PATH" 2>/dev/null)" ]; then
 fi
 
 echo "=========================================="
-echo "vLLM Server Configuration"
+echo "vLLM VLM Server Configuration"
 echo "=========================================="
 echo "Model: $MODEL_NAME"
 echo "Model Path: $MODEL_PATH"
@@ -171,13 +171,11 @@ echo ""
 export CUDA_VISIBLE_DEVICES="$CUDA_DEVICES"
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
 export VLLM_USE_FLASHINFER_MOE_FP16="${VLLM_USE_FLASHINFER_MOE_FP16:-1}"
-export VLLM_LOGGING_LEVEL="${VLLM_LOGGING_LEVEL:-DEBUG}"
-export VLLM_LOG_STATS_INTERVAL="${VLLM_LOG_STATS_INTERVAL:-1}"
 # Reduce memory fragmentation (recommended by PyTorch for OOM prevention)
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 # Start vLLM server
-echo "Starting vLLM server..."
+echo "Starting vLLM VLM server..."
 echo "OpenAI-compatible API will be available at: http://$HOST:$PORT/v1"
 echo "Press Ctrl+C to stop the server"
 echo "=========================================="

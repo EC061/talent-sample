@@ -1,9 +1,16 @@
 model:
-  # name: "Qwen/Qwen3-VL-30B-A3B-Thinking"
-  # name: "Qwen/Qwen3-VL-30B-Instruct"
-  # name: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
-  # name: "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
-  name: "QuantTrio/Qwen3-VL-235B-A22B-Instruct-AWQ"
+  # VLM models
+  vlm:
+    # name: "Qwen/Qwen3-VL-30B-A3B-Thinking"
+    # name: "Qwen/Qwen3-VL-30B-A3B-Instruct"
+    name: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+    # name: "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
+    # name: "QuantTrio/Qwen3-VL-235B-A22B-Instruct-AWQ"
+
+  # LLM models
+  llm:
+    name: "QuantTrio/Qwen3-235B-A22B-Thinking-2507-AWQ"
+    # name: "Qwen/Qwen2.5-72B-Instruct"
 
 server:
   host: "0.0.0.0"
@@ -11,21 +18,34 @@ server:
 
 vllm:
   # Optional overrides; leave null to auto-detect
-  tensor_parallel_size: null
-  cuda_devices: null
+  tensor_parallel_size: 2
+  cuda_devices: 0,3
 
   # vLLM environment and performance settings
   worker_multiproc_method: "spawn"
   use_flashinfer_moe_fp16: true
   pytorch_cuda_alloc_conf: "expandable_segments:True"
 
-  # vLLM model parameters
-  max_model_len: 131072
-  max_num_seqs: 2
-  gpu_memory_utilization: 0.90
-  seed: 1234
-  mm_encoder_tp_mode: "data"
-  enable_expert_parallel: true
+  # vLLM model parameters for VLM
+  vlm:
+    max_model_len: 131072
+    max_num_seqs: 2
+    gpu_memory_utilization: 0.80
+    seed: 1234
+    mm_encoder_tp_mode: "data"
+    enable_expert_parallel: true
+
+  # vLLM model parameters for LLM
+  llm:
+    max_model_len: 32768
+    max_seq_len_to_capture: 32768
+    max_num_seqs: 512
+    gpu_memory_utilization: 0.9
+    seed: 0
+    enable_expert_parallel: true
+    swap_space: 16
+    trust_remote_code: true
+    disable_log_requests: true
 
 api:
   base_url: ""

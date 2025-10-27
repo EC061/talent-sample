@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """
 Lightweight YAML configuration loader with sensible defaults.
+
+Can also be run as a CLI tool to print environment variable exports for shell consumption:
+
+Usage:
+  eval "$(python3 config_loader.py [vlm|llm])"
+  
+Args:
+  model_type: Either 'vlm' or 'llm' (default: 'vlm')
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -37,19 +46,27 @@ def load_config(config_path: str | Path | None = None) -> Dict[str, Any]:
     return data
 
 
-def as_env_dict(cfg: Dict[str, Any]) -> Dict[str, str]:
+def as_env_dict(cfg: Dict[str, Any], model_type: str = 'vlm') -> Dict[str, str]:
     """
     Flatten a subset of settings to the historical ENV variable names
     expected by existing scripts. Used to ease migration with bash.
+    
+    Args:
+        cfg: The configuration dictionary
+        model_type: Either 'vlm' or 'llm' to specify which model config to use
     """
     env: Dict[str, str] = {}
 
-    # Model/server
-    env['MODEL_NAME'] = str(_deep_get(cfg, 'model.name', 'Qwen/Qwen3-VL-30B-A3B-Instruct'))
+    # Model/server - choose the right model based on type
+    if model_type == 'llm':
+        env['MODEL_NAME'] = str(_deep_get(cfg, 'model.llm.name', 'QuantTrio/Qwen3-235B-A22B-Thinking-2507-AWQ'))
+    else:
+        env['MODEL_NAME'] = str(_deep_get(cfg, 'model.vlm.name', 'Qwen/Qwen3-VL-30B-A3B-Instruct'))
+    
     env['SERVER_HOST'] = str(_deep_get(cfg, 'server.host', '0.0.0.0'))
     env['SERVER_PORT'] = str(_deep_get(cfg, 'server.port', 8000))
 
-    # vLLM
+    # vLLM - common settings
     tp_size = _deep_get(cfg, 'vllm.tensor_parallel_size', None)
     if tp_size is not None and str(tp_size).strip() != '':
         env['TENSOR_PARALLEL_SIZE'] = str(tp_size)
@@ -59,12 +76,25 @@ def as_env_dict(cfg: Dict[str, Any]) -> Dict[str, str]:
     env['VLLM_WORKER_MULTIPROC_METHOD'] = str(_deep_get(cfg, 'vllm.worker_multiproc_method', 'spawn'))
     env['VLLM_USE_FLASHINFER_MOE_FP16'] = '1' if bool(_deep_get(cfg, 'vllm.use_flashinfer_moe_fp16', True)) else '0'
     env['PYTORCH_CUDA_ALLOC_CONF'] = str(_deep_get(cfg, 'vllm.pytorch_cuda_alloc_conf', 'expandable_segments:True'))
-    env['VLLM_MAX_MODEL_LEN'] = str(_deep_get(cfg, 'vllm.max_model_len', 32768))
-    env['VLLM_MAX_NUM_SEQS'] = str(_deep_get(cfg, 'vllm.max_num_seqs', 8))
-    env['VLLM_GPU_MEMORY_UTILIZATION'] = str(_deep_get(cfg, 'vllm.gpu_memory_utilization', 0.80))
-    env['VLLM_SEED'] = str(_deep_get(cfg, 'vllm.seed', 0))
-    env['VLLM_MM_ENCODER_TP_MODE'] = str(_deep_get(cfg, 'vllm.mm_encoder_tp_mode', 'data'))
-    env['VLLM_ENABLE_EXPERT_PARALLEL'] = 'true' if bool(_deep_get(cfg, 'vllm.enable_expert_parallel', True)) else 'false'
+
+    # vLLM - model-specific settings
+    if model_type == 'llm':
+        env['VLLM_MAX_MODEL_LEN'] = str(_deep_get(cfg, 'vllm.llm.max_model_len', 32768))
+        env['VLLM_MAX_SEQ_LEN_TO_CAPTURE'] = str(_deep_get(cfg, 'vllm.llm.max_seq_len_to_capture', 32768))
+        env['VLLM_MAX_NUM_SEQS'] = str(_deep_get(cfg, 'vllm.llm.max_num_seqs', 512))
+        env['VLLM_GPU_MEMORY_UTILIZATION'] = str(_deep_get(cfg, 'vllm.llm.gpu_memory_utilization', 0.9))
+        env['VLLM_SEED'] = str(_deep_get(cfg, 'vllm.llm.seed', 0))
+        env['VLLM_ENABLE_EXPERT_PARALLEL'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.enable_expert_parallel', True)) else 'false'
+        env['VLLM_SWAP_SPACE'] = str(_deep_get(cfg, 'vllm.llm.swap_space', 16))
+        env['VLLM_TRUST_REMOTE_CODE'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.trust_remote_code', True)) else 'false'
+        env['VLLM_DISABLE_LOG_REQUESTS'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.disable_log_requests', True)) else 'false'
+    else:  # vlm
+        env['VLLM_MAX_MODEL_LEN'] = str(_deep_get(cfg, 'vllm.vlm.max_model_len', 131072))
+        env['VLLM_MAX_NUM_SEQS'] = str(_deep_get(cfg, 'vllm.vlm.max_num_seqs', 2))
+        env['VLLM_GPU_MEMORY_UTILIZATION'] = str(_deep_get(cfg, 'vllm.vlm.gpu_memory_utilization', 0.90))
+        env['VLLM_SEED'] = str(_deep_get(cfg, 'vllm.vlm.seed', 1234))
+        env['VLLM_MM_ENCODER_TP_MODE'] = str(_deep_get(cfg, 'vllm.vlm.mm_encoder_tp_mode', 'data'))
+        env['VLLM_ENABLE_EXPERT_PARALLEL'] = 'true' if bool(_deep_get(cfg, 'vllm.vlm.enable_expert_parallel', True)) else 'false'
 
     # API
     env['API_BASE_URL'] = str(_deep_get(cfg, 'api.base_url', ''))
@@ -90,5 +120,26 @@ def as_env_dict(cfg: Dict[str, Any]) -> Dict[str, str]:
     env['PROMPT_TEMPLATE_SINGLE'] = str(_deep_get(cfg, 'prompts.single', ''))
     env['PROMPT_TEMPLATE_BATCH'] = str(_deep_get(cfg, 'prompts.batch', ''))
     return env
+
+
+def main() -> None:
+    """CLI entry point for printing environment variable exports."""
+    model_type = sys.argv[1] if len(sys.argv) > 1 else 'vlm'
+    if model_type not in ('vlm', 'llm'):
+        print(f"Error: Invalid model type '{model_type}'. Must be 'vlm' or 'llm'.", file=sys.stderr)
+        sys.exit(1)
+    
+    cfg = load_config()
+    env = as_env_dict(cfg, model_type=model_type)
+    for key, value in env.items():
+        if value is None:
+            continue
+        # Safely quote values for shell
+        sval = str(value).replace('"', '\\"')
+        print(f'export {key}="{sval}"')
+
+
+if __name__ == "__main__":
+    main()
 
 
