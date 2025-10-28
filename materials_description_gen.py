@@ -52,7 +52,7 @@ class MaterialsDescriptionGenerator:
             api_key = cfg.get('api', {}).get('key', 'EMPTY')
 
         if model_name is None:
-            model_name = cfg.get('model', {}).get('name', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
+            model_name = cfg.get('model', {}).get('vlm', {}).get('name', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
 
         if timeout is None:
             timeout = int(cfg.get('api', {}).get('timeout', 3600))
@@ -206,15 +206,15 @@ class MaterialsDescriptionGenerator:
         # Use config values if not provided
         cfg = load_config()
         if temperature is None:
-            temperature = float(cfg.get('generation', {}).get('temperature', 0.6))
+            temperature = float(cfg.get('generation', {}).get('vlm', {}).get('temperature', 0.6))
         if top_p is None:
-            top_p = float(cfg.get('generation', {}).get('top_p', 0.95))
+            top_p = float(cfg.get('generation', {}).get('vlm', {}).get('top_p', 0.95))
         if top_k is None:
-            top_k = int(cfg.get('generation', {}).get('top_k', 20))
+            top_k = int(cfg.get('generation', {}).get('vlm', {}).get('top_k', 20))
         if presence_penalty is None:
-            presence_penalty = float(cfg.get('generation', {}).get('presence_penalty', 0.0))
+            presence_penalty = float(cfg.get('generation', {}).get('vlm', {}).get('presence_penalty', 0.0))
         if max_tokens is None:
-            max_tokens = int(cfg.get('generation', {}).get('max_tokens', 4096))
+            max_tokens = int(cfg.get('generation', {}).get('vlm', {}).get('max_tokens', 4096))
         
         messages = self.create_message_with_image(image_path, prompt, use_url=use_url)
         
@@ -335,8 +335,8 @@ class MaterialsDescriptionGenerator:
             "description is 3-4 sentences summarizing the overall topic, key ideas, and typical problem types or skills assessed; concise, <=100 words; plain text; no bullets; avoid page-level details. Output JSON only with no extra text."
         )
         cfg = load_config()
-        single_prompt_from_env = cfg.get('prompts', {}).get('single') or legacy_prompt or single_prompt_default
-        batch_prompt_from_env = cfg.get('prompts', {}).get('batch') or legacy_prompt or batch_prompt_default
+        single_prompt_from_env = cfg.get('prompts', {}).get('vlm', {}).get('single') or legacy_prompt or single_prompt_default
+        batch_prompt_from_env = cfg.get('prompts', {}).get('vlm', {}).get('batch') or legacy_prompt or batch_prompt_default
         # If caller provided a prompt_template, use it for both modes (explicit override)
         if prompt_template is not None:
             single_prompt_from_env = prompt_template
@@ -532,7 +532,7 @@ class MaterialsDescriptionGenerator:
                     start_time = time.time()
                     cfg = load_config()
                     extra_body = {
-                        "top_k": int(cfg.get('generation', {}).get('top_k', 20)),
+                        "top_k": int(cfg.get('generation', {}).get('vlm', {}).get('top_k', 20)),
                         "guided_json": {
                             "type": "object",
                             "additionalProperties": False,
@@ -551,10 +551,10 @@ class MaterialsDescriptionGenerator:
                     stream = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
-                        temperature=float(cfg.get('generation', {}).get('temperature', 0.6)),
-                        top_p=float(cfg.get('generation', {}).get('top_p', 0.95)),
-                        presence_penalty=float(cfg.get('generation', {}).get('presence_penalty', 0.0)),
-                        max_tokens=int(cfg.get('generation', {}).get('max_tokens', 4096)),
+                        temperature=float(cfg.get('generation', {}).get('vlm', {}).get('temperature', 0.6)),
+                        top_p=float(cfg.get('generation', {}).get('vlm', {}).get('top_p', 0.95)),
+                        presence_penalty=float(cfg.get('generation', {}).get('vlm', {}).get('presence_penalty', 0.0)),
+                        max_tokens=int(cfg.get('generation', {}).get('vlm', {}).get('max_tokens', 4096)),
                         extra_body=extra_body,
                         stream=True,
                         stream_options={"include_usage": True}

@@ -3,14 +3,14 @@ model:
   vlm:
     # name: "Qwen/Qwen3-VL-30B-A3B-Thinking"
     # name: "Qwen/Qwen3-VL-30B-A3B-Instruct"
-    name: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+    # name: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
     # name: "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
-    # name: "QuantTrio/Qwen3-VL-235B-A22B-Instruct-AWQ"
+    name: "QuantTrio/Qwen3-VL-235B-A22B-Instruct-AWQ"
 
   # LLM models
   llm:
-    # name: "QuantTrio/Qwen3-235B-A22B-Thinking-2507-AWQ"
-    name: "Qwen/Qwen3-30B-A3B-Instruct-2507"
+    name: "QuantTrio/Qwen3-235B-A22B-Thinking-2507-AWQ"
+    # name: "Qwen/Qwen3-30B-A3B-Instruct-2507"
 
 server:
   host: "0.0.0.0"
@@ -18,8 +18,8 @@ server:
 
 vllm:
   # Optional overrides; leave null to auto-detect
-  tensor_parallel_size: 2
-  cuda_devices: 0,3
+  tensor_parallel_size: 4
+  cuda_devices: 1,2,3,4
 
   # vLLM environment and performance settings
   worker_multiproc_method: "spawn"
@@ -29,19 +29,18 @@ vllm:
   # vLLM model parameters for VLM
   vlm:
     max_model_len: 131072
-    max_num_seqs: 2
-    gpu_memory_utilization: 0.80
+    max_num_seqs: 1
+    gpu_memory_utilization: 0.88
     seed: 1234
     mm_encoder_tp_mode: "data"
     enable_expert_parallel: true
 
   # vLLM model parameters for LLM
   llm:
-    max_model_len: 32768
-    max_seq_len_to_capture: 32768
+    max_model_len: 131072
     max_num_seqs: 512
-    gpu_memory_utilization: 0.9
-    seed: 0
+    gpu_memory_utilization: 0.85
+    seed: 1234
     enable_expert_parallel: true
     swap_space: 16
     trust_remote_code: true
@@ -53,14 +52,21 @@ api:
   timeout: 3600
 
 generation:
-  temperature: 0.6
-  top_p: 0.95
-  top_k: 20
-  presence_penalty: 1.5
-  max_tokens: 4096
-
-batch:
-  size: 10
+  # VLM generation settings (for description generation)
+  vlm:
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    presence_penalty: 1.5
+    max_tokens: 4096
+  
+  # LLM generation settings (for recommendation system)
+  llm:
+    temperature: 0.3
+    top_p: 0.9
+    top_k: 10
+    presence_penalty: 0.0
+    max_tokens: 1024
 
 paths:
   materials_db_path: "materials/processed_materials.db"
@@ -69,9 +75,18 @@ paths:
   pdf_dir: "materials/pdf"
 
 prompts:
-  single: >-
-    Return only a JSON object with fields exactly: needed (boolean), key_concept (string), description (string). Rules: needed=true only if the page teaches a substantive concept, method, worked example, or definition. Mark needed=false for pages that are: title/cover, course schedule/timeline, syllabus outline, table of contents, announcements, logistics (deadlines, office hours, emails), exam/quiz information, instructions to reflect/prepare, grading/policies, decorative/quote/blank pages, single-panel comics or cartoons, inspirational quotes, and high-level overview/agenda slides that summarize sections without teaching details. key_concept is a 2-6 word phrase naming the primary concept taught on this page; if multiple topics appear, choose the most central. description is 1-2 short sentences defining the concept and what a student needs to know to answer multiple-choice questions about it; keep under 40 words; plain text; no lists; ignore headers/footers and long OCR passages. There will be comics included, do not classify those as teaching materials. Output JSON only with no extra text.
-  batch: >-
-    Return only a JSON object with fields exactly: key_concept (array of 5 strings), description (string). Do not include a needed field. The selected pages will already exclude administrative content (title, schedule, announcements, logistics, exam info, syllabus/TOC). Rules: key_concept must contain exactly five phrases (each 2-6 words) capturing the main concepts covered across the selected pages. description is 3-4 sentences summarizing the overall topic, key ideas, and typical problem types or skills assessed; concise, <=100 words; plain text; no bullets; avoid page-level details. Output JSON only with no extra text.
+  # VLM prompts for description generation
+  vlm:
+    single: >-
+      Return only a JSON object with fields exactly: needed (boolean), key_concept (string), description (string). Rules: needed=true only if the page teaches a substantive concept, method, worked example, or definition. Mark needed=false for pages that are: title/cover, course schedule/timeline, syllabus outline, table of contents, announcements, logistics (deadlines, office hours, emails), exam/quiz information, instructions to reflect/prepare, grading/policies, decorative/quote/blank pages, single-panel comics or cartoons, inspirational quotes, and high-level overview/agenda slides that summarize sections without teaching details. key_concept is a 2-6 word phrase naming the primary concept taught on this page; if multiple topics appear, choose the most central. description is 1-2 short sentences defining the concept and what a student needs to know to answer multiple-choice questions about it; keep under 40 words; plain text; no lists; ignore headers/footers and long OCR passages. There will be comics included, do not classify those as teaching materials. Output JSON only with no extra text.
+    batch: >-
+      Return only a JSON object with fields exactly: key_concept (array of 5 strings), description (string). Do not include a needed field. The selected pages will already exclude administrative content (title, schedule, announcements, logistics, exam info, syllabus/TOC). Rules: key_concept must contain exactly five phrases (each 2-6 words) capturing the main concepts covered across the selected pages. description is 3-4 sentences summarizing the overall topic, key ideas, and typical problem types or skills assessed; concise, <=100 words; plain text; no bullets; avoid page-level details. Output JSON only with no extra text.
+  
+  # LLM prompts for recommendation system
+  llm:
+    file_selection: >-
+      You are an educational assistant helping students learn from mistakes. Based on the question and incorrect answer provided, analyze the available learning materials and select the MOST relevant file that will help the student understand the correct concept. Consider the key concepts and descriptions of each material. Return ONLY a JSON object with fields: selected_file (string: the original filename), reasoning (string: 1-2 sentences explaining why this material is most relevant).
+    page_selection: >-
+      You are an educational assistant helping students learn from mistakes. Based on the question and incorrect answer provided, and given the available pages from the selected material, identify the MOST relevant page range that will help the student understand the correct concept. Each page has key concepts and descriptions. Select a focused range of consecutive pages (3-5 pages maximum) that directly address the student's knowledge gap. Return ONLY a JSON object with fields: start_page (integer), end_page (integer), reasoning (string: 1-2 sentences explaining what concepts these pages cover and how they address the misconception).
 
 

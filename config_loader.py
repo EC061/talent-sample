@@ -101,12 +101,13 @@ def as_env_dict(cfg: Dict[str, Any], model_type: str = 'vlm') -> Dict[str, str]:
     env['API_KEY'] = str(_deep_get(cfg, 'api.key', 'EMPTY'))
     env['API_TIMEOUT'] = str(_deep_get(cfg, 'api.timeout', 3600))
 
-    # Generation
-    env['GENERATION_TEMPERATURE'] = str(_deep_get(cfg, 'generation.temperature', 0.6))
-    env['GENERATION_TOP_P'] = str(_deep_get(cfg, 'generation.top_p', 0.95))
-    env['GENERATION_TOP_K'] = str(_deep_get(cfg, 'generation.top_k', 20))
-    env['GENERATION_PRESENCE_PENALTY'] = str(_deep_get(cfg, 'generation.presence_penalty', 0.0))
-    env['GENERATION_MAX_TOKENS'] = str(_deep_get(cfg, 'generation.max_tokens', 4096))
+    # Generation - use model-specific settings
+    gen_prefix = 'generation.llm' if model_type == 'llm' else 'generation.vlm'
+    env['GENERATION_TEMPERATURE'] = str(_deep_get(cfg, f'{gen_prefix}.temperature', 0.6 if model_type == 'vlm' else 0.3))
+    env['GENERATION_TOP_P'] = str(_deep_get(cfg, f'{gen_prefix}.top_p', 0.95 if model_type == 'vlm' else 0.9))
+    env['GENERATION_TOP_K'] = str(_deep_get(cfg, f'{gen_prefix}.top_k', 20 if model_type == 'vlm' else 10))
+    env['GENERATION_PRESENCE_PENALTY'] = str(_deep_get(cfg, f'{gen_prefix}.presence_penalty', 1.5 if model_type == 'vlm' else 0.0))
+    env['GENERATION_MAX_TOKENS'] = str(_deep_get(cfg, f'{gen_prefix}.max_tokens', 4096 if model_type == 'vlm' else 1024))
 
     # Batch
     env['BATCH_SIZE'] = str(_deep_get(cfg, 'batch.size', 10))
@@ -116,9 +117,13 @@ def as_env_dict(cfg: Dict[str, Any], model_type: str = 'vlm') -> Dict[str, str]:
     env['MATERIALS_DIR'] = str(_deep_get(cfg, 'paths.materials_dir', 'materials/processed'))
     env['PDF_DIR'] = str(_deep_get(cfg, 'paths.pdf_dir', 'materials/pdf'))
 
-    # Prompts
-    env['PROMPT_TEMPLATE_SINGLE'] = str(_deep_get(cfg, 'prompts.single', ''))
-    env['PROMPT_TEMPLATE_BATCH'] = str(_deep_get(cfg, 'prompts.batch', ''))
+    # Prompts - use model-specific settings
+    if model_type == 'llm':
+        env['PROMPT_FILE_SELECTION'] = str(_deep_get(cfg, 'prompts.llm.file_selection', ''))
+        env['PROMPT_PAGE_SELECTION'] = str(_deep_get(cfg, 'prompts.llm.page_selection', ''))
+    else:
+        env['PROMPT_TEMPLATE_SINGLE'] = str(_deep_get(cfg, 'prompts.vlm.single', ''))
+        env['PROMPT_TEMPLATE_BATCH'] = str(_deep_get(cfg, 'prompts.vlm.batch', ''))
     return env
 
 
