@@ -10,7 +10,7 @@ import json
 import sqlite3
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import base64
 from openai import OpenAI
 from config_loader import load_config
@@ -40,19 +40,31 @@ class MaterialsDescriptionGenerator:
         """
         # Read configuration from YAML
         cfg = load_config()
+        self.platform = cfg.get('api', {}).get('platform', 'vllm').lower()
+        self.cfg = cfg
+        
+        # Get platform-specific API configuration
+        api_config = cfg.get('api', {}).get(self.platform, {})
+        
         # Get values from YAML or use provided values or fallback defaults
         if api_base is None:
-            api_base = (cfg.get('api', {}).get('base_url') or '').strip()
+            api_base = (api_config.get('base_url') or '').strip()
             if not api_base:
-                server_host = cfg.get('server', {}).get('host', '0.0.0.0')
-                server_port = cfg.get('server', {}).get('port', 8000)
-                api_base = f"http://{server_host}:{server_port}/v1"
+                if self.platform == 'openai':
+                    api_base = 'https://api.openai.com/v1'
+                else:
+                    server_host = cfg.get('server', {}).get('host', '0.0.0.0')
+                    server_port = cfg.get('server', {}).get('port', 8000)
+                    api_base = f"http://{server_host}:{server_port}/v1"
 
         if api_key is None:
-            api_key = cfg.get('api', {}).get('key', 'EMPTY')
+            api_key = api_config.get('key', 'EMPTY' if self.platform == 'vllm' else '')
 
         if model_name is None:
-            model_name = cfg.get('model', {}).get('vlm', {}).get('name', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
+            if self.platform == 'openai':
+                model_name = api_config.get('vlm_model', 'gpt-4o')
+            else:
+                model_name = cfg.get('model', {}).get('vlm', {}).get('name', 'Qwen/Qwen3-VL-30B-A3B-Instruct')
 
         if timeout is None:
             timeout = int(cfg.get('api', {}).get('timeout', 3600))
@@ -64,6 +76,31 @@ class MaterialsDescriptionGenerator:
         )
         self.model_name = model_name
         
+    def _prepare_structured_output(self, schema: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """
+        Prepare structured output parameters based on platform.
+        
+        Args:
+            schema: JSON schema dictionary
+            
+        Returns:
+            Tuple of (extra_body, response_format) where one will be None based on platform
+        """
+        if self.platform == 'openai':
+            # OpenAI format: use response_format parameter
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "schema": schema,
+                    "strict": True
+                }
+            }
+            return None, response_format
+        else:
+            # vLLM format: use guided_json in extra_body
+            extra_body = {"guided_json": schema}
+            return extra_body, None
+    
     def encode_image_to_base64(self, image_path: str) -> str:
         """
         Encode an image file to base64 string.
@@ -203,37 +240,83 @@ class MaterialsDescriptionGenerator:
         Returns:
             Generated description text, or dict with 'content' and 'metrics' if return_metrics=True
         """
-        # Use config values if not provided
-        cfg = load_config()
-        if temperature is None:
-            temperature = float(cfg.get('generation', {}).get('vlm', {}).get('temperature', 0.6))
-        if top_p is None:
-            top_p = float(cfg.get('generation', {}).get('vlm', {}).get('top_p', 0.95))
-        if top_k is None:
-            top_k = int(cfg.get('generation', {}).get('vlm', {}).get('top_k', 20))
-        if presence_penalty is None:
-            presence_penalty = float(cfg.get('generation', {}).get('vlm', {}).get('presence_penalty', 0.0))
-        if max_tokens is None:
-            max_tokens = int(cfg.get('generation', {}).get('vlm', {}).get('max_tokens', 4096))
+        # Use platform-specific config values if not provided
+        # For OpenAI, don't use any generation configs - only use explicitly provided parameters
+        if self.platform == 'openai':
+            # For OpenAI, keep None values as None - don't use any config defaults
+            top_p_val = None
+            top_k_val = None
+        else:
+            # For vLLM, use config values
+            gen_config = self.cfg.get('generation', {}).get(self.platform, {}).get('vlm', {})
+            if temperature is None:
+                temperature = float(gen_config.get('temperature', 0.6))
+            if presence_penalty is None:
+                presence_penalty = float(gen_config.get('presence_penalty', 0.0))
+            if max_tokens is None:
+                max_tokens = int(gen_config.get('max_tokens', 4096))
+            
+            # Only include top_p and top_k for vLLM platform
+            top_p_val = None
+            top_k_val = None
+            if top_p is None:
+                top_p_val = float(gen_config.get('top_p', 0.95))
+            else:
+                top_p_val = top_p
+            if top_k is None:
+                top_k_val = int(gen_config.get('top_k', 20))
+            else:
+                top_k_val = top_k
         
         messages = self.create_message_with_image(image_path, prompt, use_url=use_url)
         
         try:
             start_time = time.time()
-            extra_body = {"top_k": top_k}
+            extra_body = {}
+            response_format = None
+            
+            # Only add top_k to extra_body for vLLM
+            if self.platform == 'vllm' and top_k_val is not None:
+                extra_body["top_k"] = top_k_val
+            
             if guided_json is not None:
-                extra_body["guided_json"] = guided_json
-            stream = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                top_p=top_p,
-                presence_penalty=presence_penalty,
-                max_tokens=max_tokens,
-                extra_body=extra_body,
-                stream=True,
-                stream_options={"include_usage": True}
-            )
+                struct_extra_body, struct_response_format = self._prepare_structured_output(guided_json)
+                if struct_extra_body:
+                    extra_body.update(struct_extra_body)
+                if struct_response_format:
+                    response_format = struct_response_format
+            
+            create_kwargs = {
+                "model": self.model_name,
+                "messages": messages,
+                "stream": True,
+                "stream_options": {"include_usage": True}
+            }
+            
+            # Only include generation parameters for vLLM or if explicitly provided for OpenAI
+            if self.platform == 'vllm':
+                create_kwargs["temperature"] = temperature
+                create_kwargs["presence_penalty"] = presence_penalty
+                create_kwargs["max_tokens"] = max_tokens
+                if top_p_val is not None:
+                    create_kwargs["top_p"] = top_p_val
+            else:
+                # For OpenAI, only include if not None/default
+                if temperature is not None:
+                    create_kwargs["temperature"] = temperature
+                if presence_penalty is not None:
+                    create_kwargs["presence_penalty"] = presence_penalty
+                if max_tokens is not None:
+                    create_kwargs["max_tokens"] = max_tokens
+            
+            # Only include extra_body if it has content
+            if extra_body:
+                create_kwargs["extra_body"] = extra_body
+            
+            if response_format is not None:
+                create_kwargs["response_format"] = response_format
+            
+            stream = self.client.chat.completions.create(**create_kwargs)
             
             content = ""
             first_token_time = None
@@ -530,35 +613,58 @@ class MaterialsDescriptionGenerator:
                     
                     # Generate description for batch
                     start_time = time.time()
-                    cfg = load_config()
-                    extra_body = {
-                        "top_k": int(cfg.get('generation', {}).get('vlm', {}).get('top_k', 20)),
-                        "guided_json": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "key_concept": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "minItems": 5,
-                                    "maxItems": 5
-                                },
-                                "description": {"type": "string"}
+                    batch_schema = {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "key_concept": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "minItems": 5,
+                                "maxItems": 5
                             },
-                            "required": ["key_concept", "description"]
-                        }
+                            "description": {"type": "string"}
+                        },
+                        "required": ["key_concept", "description"]
                     }
-                    stream = self.client.chat.completions.create(
-                        model=self.model_name,
-                        messages=messages,
-                        temperature=float(cfg.get('generation', {}).get('vlm', {}).get('temperature', 0.6)),
-                        top_p=float(cfg.get('generation', {}).get('vlm', {}).get('top_p', 0.95)),
-                        presence_penalty=float(cfg.get('generation', {}).get('vlm', {}).get('presence_penalty', 0.0)),
-                        max_tokens=int(cfg.get('generation', {}).get('vlm', {}).get('max_tokens', 4096)),
-                        extra_body=extra_body,
-                        stream=True,
-                        stream_options={"include_usage": True}
-                    )
+                    
+                    extra_body = {}
+                    response_format = None
+                    
+                    # Only add top_k to extra_body for vLLM
+                    if self.platform == 'vllm':
+                        gen_config = self.cfg.get('generation', {}).get(self.platform, {}).get('vlm', {})
+                        extra_body["top_k"] = int(gen_config.get('top_k', 20))
+                    
+                    struct_extra_body, struct_response_format = self._prepare_structured_output(batch_schema)
+                    if struct_extra_body:
+                        extra_body.update(struct_extra_body)
+                    if struct_response_format:
+                        response_format = struct_response_format
+                    
+                    create_kwargs = {
+                        "model": self.model_name,
+                        "messages": messages,
+                        "stream": True,
+                        "stream_options": {"include_usage": True}
+                    }
+                    
+                    # Only include generation parameters for vLLM
+                    if self.platform == 'vllm':
+                        gen_config = self.cfg.get('generation', {}).get(self.platform, {}).get('vlm', {})
+                        create_kwargs["temperature"] = float(gen_config.get('temperature', 0.6))
+                        create_kwargs["presence_penalty"] = float(gen_config.get('presence_penalty', 0.0))
+                        create_kwargs["max_tokens"] = int(gen_config.get('max_tokens', 4096))
+                        create_kwargs["top_p"] = float(gen_config.get('top_p', 0.95))
+                    
+                    # Only include extra_body if it has content
+                    if extra_body:
+                        create_kwargs["extra_body"] = extra_body
+                    
+                    if response_format is not None:
+                        create_kwargs["response_format"] = response_format
+                    
+                    stream = self.client.chat.completions.create(**create_kwargs)
                     
                     content = ""
                     first_token_time = None

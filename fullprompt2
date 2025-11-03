@@ -1,0 +1,96 @@
+You are an educational assistant helping students learn from mistakes. Based on the question and incorrect answer provided, and given the available pages from the selected material, identify the MOST relevant page range that will help the student understand the correct concept. Each page has key concepts and descriptions. Select a focused range of consecutive pages (3-5 pages maximum) that directly address the student's knowledge gap. Return ONLY a JSON object with fields: start_page (integer), end_page (integer), reasoning (string: 1-2 sentences explaining what concepts these pages cover and how they address the misconception).
+
+Question: 
+        A truck is pulling a car. Let FT be the magnitude of the force that the
+    truck exerts on the car and let FC be the magnitude of the force that the car exerts on the truck.
+    If the truck is speeding up while driving up a mountain and friction is negligible, how does the
+    magnitude of FT compare to FC?
+    A. FT > FC
+    B. FC > FT
+    C. FT = FC = 0
+    D. FT = FC > 0
+    
+
+Student's Wrong Answer: C. FT = FC = 0
+Correct Answer: D. FT = FC > 0
+
+Selected Material: Day14-Phys1111_09_17_2025_Newton’sLawsofMotion.pdf
+
+Available Pages:
+Page 8:
+  Key Concept: Law of Inertia
+  Description: An object’s velocity stays constant unless a net force acts on it. This means stationary objects stay still and moving objects keep moving at the same speed and direction if no unbalanced force is present.
+
+Page 9:
+  Key Concept: Law of Inertia
+  Description: An object’s velocity stays constant unless a net force acts on it. Stationary objects stay at rest; moving ones keep constant speed and direction when no net force is present.
+
+Page 10:
+  Key Concept: Law of Inertia
+  Description: An object’s velocity stays constant unless a net force acts on it. Stationary objects stay still; moving ones keep constant speed and direction without external force.
+
+Page 11:
+  Key Concept: Mechanical Equilibrium
+  Description: An object is in mechanical equilibrium when the net force acting on it equals zero, meaning all forces cancel out and the object remains at rest or moves with constant velocity.
+
+Page 12:
+  Key Concept: Inertial Reference Frame
+  Description: An inertial reference frame moves at constant velocity and obeys Newton’s First Law. Accelerating frames are not inertial, as objects appear to accelerate without force.
+
+Page 13:
+  Key Concept: Mass and Inertia
+  Description: Mass (m, unit kg) is an object’s intrinsic property that measures its resistance to changes in velocity, also known as inertia.
+
+Page 14:
+  Key Concept: Mass and Weight
+  Description: Mass (m, kg) is an object’s inertia; weight (N) is gravity’s force on it. Near Earth, weight equals mass times gravity: F_G = mg.
+
+Page 15:
+  Key Concept: Newton's Second Law
+  Description: Force equals mass times acceleration. The net force vector determines the direction and magnitude of an object’s acceleration, calculated by summing all individual forces acting on it.
+
+Page 16:
+  Key Concept: Free-Body Diagrams
+  Description: A free-body diagram shows all forces acting on an object. Students must identify and draw these forces correctly to apply Newton’s Second Law in problem solving.
+
+Page 17:
+  Key Concept: Newton's Second Law Method
+  Description: Solve force problems by drawing free-body diagrams and choosing a coordinate system aligned with acceleration to simplify calculations using F=ma.
+
+Page 18:
+  Key Concept: Newton's Second Law Method
+  Description: A step-by-step approach to solve force problems using free-body diagrams, coordinate systems, and vector component resolution to apply F=ma effectively.
+
+Page 19:
+  Key Concept: Newton's Second Law Method
+  Description: A step-by-step method to solve force problems using free-body diagrams, coordinate systems, and component equations: sum of forces equals mass times acceleration in each direction.
+
+Page 20:
+  Key Concept: Newton's Second Law Method
+  Description: A step-by-step approach to solve force problems using free-body diagrams, coordinate systems, and component equations for x and y directions to find unknowns.
+
+Page 21:
+  Key Concept: Newton's Third Law
+  Description: For every action, there is an equal and opposite reaction. Forces always occur in pairs between two interacting objects.
+
+Page 22:
+  Key Concept: Newton's Third Law
+  Description: For every action force, there is an equal and opposite reaction force acting on the two interacting objects. These forces are always paired and act on different objects.
+
+Page 23:
+  Key Concept: Newton's Third Law
+  Description: For every action force, there is an equal and opposite reaction force between two interacting objects. These forces act on different objects and are always paired.
+
+Page 24:
+  Key Concept: Newton's Third Law
+  Description: For every action, there is an equal and opposite reaction. These paired forces act on different objects and are always equal in magnitude but opposite in direction.
+
+Page 25:
+  Key Concept: Newton's Second Law
+  Description: Force equals mass times acceleration. When multiple forces act at angles, resolve them into components to find net force and motion along each axis.
+
+Page 26:
+  Key Concept: Newton's Second Law
+  Description: Force equals mass times acceleration. Use F=ma to find net force, then resolve forces into components to solve for individual applied forces or normal force in inclined push scenarios.
+
+Analyze the question and the student's misconception, then select a focused range of consecutive pages (3-5 pages maximum) that will help them understand the correct concept. Use the actual page numbers from the list above.

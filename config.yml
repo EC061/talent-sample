@@ -19,7 +19,7 @@ server:
 vllm:
   # Optional overrides; leave null to auto-detect
   tensor_parallel_size: 4
-  cuda_devices: 1,2,3,4
+  cuda_devices: 0,1,2,3
 
   # vLLM environment and performance settings
   worker_multiproc_method: "spawn"
@@ -40,33 +40,44 @@ vllm:
     max_model_len: 131072
     max_num_seqs: 512
     gpu_memory_utilization: 0.85
-    seed: 1234
+    seed: 9856
     enable_expert_parallel: true
     swap_space: 16
     trust_remote_code: true
     disable_log_requests: true
 
 api:
-  base_url: ""
-  key: "EMPTY"
+  platform: "vllm"  # Options: "vllm" or "openai"
   timeout: 3600
+  
+  # vLLM API configuration
+  vllm:
+    base_url: ""  # Leave empty to use server host/port
+    key: "EMPTY"
+  
+  # OpenAI API configuration
+  openai:
+    base_url: "https://api.openai.com/v1"  # OpenAI API endpoint
+    key: ""  # Your OpenAI API key
+    # OpenAI model names
+    vlm_model: "gpt-4o"  # Vision model for description generation
+    llm_model: "gpt-4o"  # Text model for recommendation system
 
 generation:
-  # VLM generation settings (for description generation)
-  vlm:
-    temperature: 0.6
-    top_p: 0.95
-    top_k: 20
-    presence_penalty: 1.5
-    max_tokens: 4096
-  
-  # LLM generation settings (for recommendation system)
-  llm:
-    temperature: 0.3
-    top_p: 0.9
-    top_k: 10
-    presence_penalty: 0.0
-    max_tokens: 1024
+  # vLLM generation settings (for description generation)
+  vllm:
+    vlm:
+      temperature: 0.6
+      top_p: 0.95
+      top_k: 20
+      presence_penalty: 1.5
+      max_tokens: 4096
+    llm:
+      temperature: 0.3
+      top_p: 0.9
+      top_k: 10
+      presence_penalty: 0.0
+      max_tokens: 1024
 
 paths:
   materials_db_path: "materials/processed_materials.db"

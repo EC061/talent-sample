@@ -3,33 +3,33 @@
   "wrong_answer": "C. FT = FC = 0",
   "correct_answer": "D. FT = FC > 0",
   "step1": {
-    "selected_file": "Day15-Phys1111_09_19_2025_Connectedobjects.pdf",
-    "reasoning": "The question involves two connected objects (truck and car) and the forces between them, which directly relates to the concept of tension and Newton's Second Law in connected systems. The student's incorrect answer suggests a misunderstanding of action-reaction pairs and force magnitudes in such systems, which is precisely the focus of the connected objects material, including the principle that tension forces are equal in magnitude (FT = FC) when the string is massless and ideal.",
+    "selected_file": "Day14-Phys1111_09_17_2025_Newton’sLawsofMotion.pdf",
+    "reasoning": "The student incorrectly assumed no forces exist (FT=FC=0), but the question involves Newton's Third Law where action-reaction pairs are always equal and opposite. The selected file explicitly covers action-reaction pairs and clarifies that forces between two objects are equal regardless of motion, which directly addresses the misconception.",
     "metrics": {
-      "prompt_tokens": 1007,
-      "completion_tokens": 131,
-      "total_tokens": 1138,
-      "total_time": 4.262860536575317,
-      "ttft": 0.35922861099243164,
-      "generation_time": 3.9036319255828857,
-      "pp_per_sec": 2803.228833076483,
-      "tg_per_sec": 33.55849180899381
+      "prompt_tokens": 880,
+      "completion_tokens": 104,
+      "total_tokens": 984,
+      "total_time": 4.385730504989624,
+      "ttft": 0.21694564819335938,
+      "generation_time": 4.168784856796265,
+      "pp_per_sec": 4056.3155210915934,
+      "tg_per_sec": 24.947317641123032
     }
   },
   "step2": {
-    "start_page": 8,
-    "end_page": 10,
+    "start_page": 21,
+    "end_page": 23,
     "num_pages": 3,
-    "reasoning": "These pages explain that connected objects have the same acceleration magnitude and how to apply Newton's Second Law to each object or the system as a whole. This directly addresses the student's misconception that forces are zero (C) by clarifying that forces exist and are equal in magnitude due to Newton's Third Law, even when accelerating.",
+    "reasoning": "The student incorrectly thought both forces were zero, but Newton's Third Law states that action-reaction force pairs are always equal and non-zero when objects interact. Pages 21-23 explain that these paired forces act on different objects and are equal in magnitude but opposite in direction, directly addressing the misconception about FT and FC being zero.",
     "metrics": {
-      "prompt_tokens": 1191,
-      "completion_tokens": 91,
-      "total_tokens": 1282,
-      "total_time": 2.7973389625549316,
-      "ttft": 0.20798516273498535,
-      "generation_time": 2.5893537998199463,
-      "pp_per_sec": 5726.370017641941,
-      "tg_per_sec": 35.1439034736496
+      "prompt_tokens": 1249,
+      "completion_tokens": 92,
+      "total_tokens": 1341,
+      "total_time": 3.6290595531463623,
+      "ttft": 0.04903292655944824,
+      "generation_time": 3.580026626586914,
+      "pp_per_sec": 25472.679026932932,
+      "tg_per_sec": 25.698132890064546
     }
   }
 }
