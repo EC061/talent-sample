@@ -45,6 +45,11 @@ class MaterialsDescriptionGenerator:
         
         # Get platform-specific API configuration
         api_config = cfg.get('api', {}).get(self.platform, {})
+
+        service_tier = api_config.get('service_tier') if self.platform == 'openai' else None
+        if isinstance(service_tier, str):
+            service_tier = service_tier.strip().lower()
+        self.service_tier = service_tier or None
         
         # Get values from YAML or use provided values or fallback defaults
         if api_base is None:
@@ -88,9 +93,15 @@ class MaterialsDescriptionGenerator:
         """
         if self.platform == 'openai':
             # OpenAI format: use response_format parameter
+            schema_name = None
+            if isinstance(schema, dict):
+                schema_name = schema.get('title')
+            if not schema_name:
+                schema_name = 'structured_output'
             response_format = {
                 "type": "json_schema",
                 "json_schema": {
+                    "name": schema_name,
                     "schema": schema,
                     "strict": True
                 }
@@ -316,6 +327,9 @@ class MaterialsDescriptionGenerator:
             if response_format is not None:
                 create_kwargs["response_format"] = response_format
             
+            if self.platform == 'openai' and self.service_tier is not None:
+                create_kwargs["service_tier"] = self.service_tier
+            
             stream = self.client.chat.completions.create(**create_kwargs)
             
             content = ""
@@ -401,9 +415,8 @@ class MaterialsDescriptionGenerator:
         
         # Load prompt templates:
         # 1) Explicit function arg overrides everything
-        # 2) Otherwise prefer PROMPT_TEMPLATE_SINGLE for per-page and PROMPT_TEMPLATE_BATCH for batch
-        # 3) Fallback to legacy PROMPT_TEMPLATE, then to built-in defaults
-        legacy_prompt = None
+        # 2) Otherwise prefer values from config.yml
+        # 3) Fallback to built-in defaults
         single_prompt_default = (
             "Return only a JSON object with fields exactly: needed (boolean), key_concept (string), description (string). "
             "Rules: needed=true only if the page teaches a substantive concept, method, worked example, or definition. "
@@ -417,13 +430,12 @@ class MaterialsDescriptionGenerator:
             "Rules: key_concept must contain exactly five phrases (each 2-6 words) capturing the main concepts covered across the selected pages. "
             "description is 3-4 sentences summarizing the overall topic, key ideas, and typical problem types or skills assessed; concise, <=100 words; plain text; no bullets; avoid page-level details. Output JSON only with no extra text."
         )
-        cfg = load_config()
-        single_prompt_from_env = cfg.get('prompts', {}).get('vlm', {}).get('single') or legacy_prompt or single_prompt_default
-        batch_prompt_from_env = cfg.get('prompts', {}).get('vlm', {}).get('batch') or legacy_prompt or batch_prompt_default
-        # If caller provided a prompt_template, use it for both modes (explicit override)
+        prompt_cfg = cfg.get('prompts', {}).get('vlm', {})
+        single_prompt = prompt_cfg.get('single') or single_prompt_default
+        batch_prompt = prompt_cfg.get('batch') or batch_prompt_default
         if prompt_template is not None:
-            single_prompt_from_env = prompt_template
-            batch_prompt_from_env = prompt_template
+            single_prompt = prompt_template
+            batch_prompt = prompt_template
         
         # Connect to database
         db_path_obj = Path(db_path)
@@ -542,7 +554,7 @@ class MaterialsDescriptionGenerator:
                     }
                     result = self.generate_description(
                         str(image_path),
-                        single_prompt_from_env,
+                        single_prompt,
                         use_url=False,
                         return_metrics=True,
                         verbose=True,
@@ -607,7 +619,7 @@ class MaterialsDescriptionGenerator:
                     # Create message with multiple images
                     messages = self.create_message_with_multiple_images(
                         filtered_image_paths,
-                        batch_prompt_from_env,
+                        batch_prompt,
                         use_url=False
                     )
                     
@@ -663,6 +675,9 @@ class MaterialsDescriptionGenerator:
                     
                     if response_format is not None:
                         create_kwargs["response_format"] = response_format
+
+                    if self.platform == 'openai' and self.service_tier is not None:
+                        create_kwargs["service_tier"] = self.service_tier
                     
                     stream = self.client.chat.completions.create(**create_kwargs)
                     

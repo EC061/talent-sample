@@ -47,7 +47,7 @@ vllm:
     disable_log_requests: true
 
 api:
-  platform: "vllm"  # Options: "vllm" or "openai"
+  platform: "openai"  # Options: "vllm" or "openai"
   timeout: 3600
   
   # vLLM API configuration
@@ -59,9 +59,10 @@ api:
   openai:
     base_url: "https://api.openai.com/v1"  # OpenAI API endpoint
     key: ""  # Your OpenAI API key
+    service_tier: flex  # Options: "standard", "priority", "scale", "flex"; null uses account default
     # OpenAI model names
-    vlm_model: "gpt-4o"  # Vision model for description generation
-    llm_model: "gpt-4o"  # Text model for recommendation system
+    vlm_model: "gpt-5"  # Vision model for description generation
+    llm_model: "gpt-5"  # Text model for recommendation system
 
 generation:
   # vLLM generation settings (for description generation)

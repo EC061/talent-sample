@@ -1,0 +1,35 @@
+{
+  "question": "\n        A truck is pulling a car. Let FT be the magnitude of the force that the\n    truck exerts on the car and let FC be the magnitude of the force that the car exerts on the truck.\n    If the truck is speeding up while driving up a mountain and friction is negligible, how does the\n    magnitude of FT compare to FC?\n    A. FT > FC\n    B. FC > FT\n    C. FT = FC = 0\n    D. FT = FC > 0\n    ",
+  "wrong_answer": "C. FT = FC = 0",
+  "correct_answer": "D. FT = FC > 0",
+  "step1": {
+    "selected_file": "Day14-Phys1111_09_17_2025_Newton’sLawsofMotion.pdf",
+    "reasoning": "It explains Newton’s third law (action–reaction pairs), showing that interaction forces are equal in magnitude and opposite in direction even during acceleration, so FT = FC > 0.",
+    "metrics": {
+      "prompt_tokens": 1031,
+      "completion_tokens": 654,
+      "total_tokens": 1685,
+      "total_time": 8.191638946533203,
+      "ttft": 7.996522426605225,
+      "generation_time": 0.19511651992797852,
+      "pp_per_sec": 128.93104589687144,
+      "tg_per_sec": 3351.843299795449
+    }
+  },
+  "step2": {
+    "start_page": 21,
+    "end_page": 24,
+    "num_pages": 4,
+    "reasoning": "These pages explain Newton’s third law: interaction forces between two objects are equal in magnitude and opposite in direction, acting on different bodies. This directly addresses the misconception by showing that the truck’s pull on the car and the car’s pull on the truck are equal and nonzero when they interact, even while accelerating.",
+    "metrics": {
+      "prompt_tokens": 1365,
+      "completion_tokens": 795,
+      "total_tokens": 2160,
+      "total_time": 13.9339919090271,
+      "ttft": 12.978574514389038,
+      "generation_time": 0.9554173946380615,
+      "pp_per_sec": 105.17333767946987,
+      "tg_per_sec": 832.0970546084394
+    }
+  }
+}

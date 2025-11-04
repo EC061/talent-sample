@@ -42,6 +42,12 @@ class MaterialRecommendationSystem:
         # Get platform-specific API configuration
         api_config = cfg.get('api', {}).get(self.platform, {})
 
+        # Determine optional service tier for OpenAI platform
+        service_tier = api_config.get("service_tier") if self.platform == 'openai' else None
+        if isinstance(service_tier, str):
+            service_tier = service_tier.strip().lower()
+        self.service_tier = service_tier or None
+
         # Get values from YAML or use provided values or fallback defaults
         if api_base is None:
             api_base = (api_config.get("base_url") or "").strip()
@@ -175,9 +181,15 @@ class MaterialRecommendationSystem:
         """
         if self.platform == 'openai':
             # OpenAI format: use response_format parameter
+            schema_name = None
+            if isinstance(schema, dict):
+                schema_name = schema.get("title")
+            if not schema_name:
+                schema_name = "structured_output"
             response_format = {
                 "type": "json_schema",
                 "json_schema": {
+                    "name": schema_name,
                     "schema": schema,
                     "strict": True
                 }
@@ -306,6 +318,9 @@ class MaterialRecommendationSystem:
             
             if response_format is not None:
                 create_kwargs["response_format"] = response_format
+
+            if self.platform == 'openai' and self.service_tier is not None:
+                create_kwargs["service_tier"] = self.service_tier
 
             stream = self.client.chat.completions.create(**create_kwargs)
 
@@ -473,11 +488,8 @@ Analyze the question and the student's misconception, then select the most relev
             },
             "required": ["selected_file", "reasoning"],
         }
-        with open("fullprompt1", "w", encoding="utf-8") as f:
-            f.write(full_prompt)
-            
         if verbose:
-            print("\nGenerating file recommendation...")
+            print("Sending request to select file...")
 
         result = self.generate_completion(
             full_prompt, guided_json=file_selection_schema, verbose=verbose
@@ -592,8 +604,6 @@ Analyze the question and the student's misconception, then select a focused rang
             },
             "required": ["start_page", "end_page", "reasoning"],
         }
-        with open("fullprompt2", "w", encoding="utf-8") as f:
-            f.write(full_prompt)
         if verbose:
             print("\nGenerating page range recommendation...")
 

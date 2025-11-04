@@ -1,0 +1,470 @@
+(talent-sample) edward@856fdec85fe8:~/data/talent-sample$ python materials_description_gen.py 
+Found 108 materials to process
+Need to process 108 tasks (including batch tasks)
+
+================================================================================
+Processing Materials
+================================================================================
+
+[1/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_1.jpg
+  ✓ PP: 1183, TG: 301
+  ✓ TTFT: 8.268s, TG/sec: 5082.37, PP/sec: 143.08
+
+[2/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_2.jpg
+  ✓ PP: 1183, TG: 186
+  ✓ TTFT: 5.526s, TG/sec: 361.02, PP/sec: 214.09
+
+[3/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_3.jpg
+  ✓ PP: 1183, TG: 693
+  ✓ TTFT: 12.182s, TG/sec: 1933.70, PP/sec: 97.11
+
+[4/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_4.jpg
+  ✓ PP: 1183, TG: 363
+  ✓ TTFT: 6.579s, TG/sec: 7254.75, PP/sec: 179.82
+
+[5/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_5.jpg
+  ✓ PP: 1183, TG: 436
+  ✓ TTFT: 6.909s, TG/sec: 1190.03, PP/sec: 171.23
+
+[6/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_6.jpg
+  ✓ PP: 1183, TG: 314
+  ✓ TTFT: 8.652s, TG/sec: 826.53, PP/sec: 136.73
+
+[7/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_7.jpg
+  ✓ PP: 1183, TG: 515
+  ✓ TTFT: 10.965s, TG/sec: 3016.04, PP/sec: 107.89
+
+[8/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_8.jpg
+  ✓ PP: 1183, TG: 190
+  ✓ TTFT: 10.750s, TG/sec: 947.50, PP/sec: 110.05
+
+[9/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_9.jpg
+  ✓ PP: 1183, TG: 247
+  ✓ TTFT: 6.335s, TG/sec: 785.59, PP/sec: 186.75
+
+[10/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_10.jpg
+  ✓ PP: 1183, TG: 519
+  ✓ TTFT: 26.779s, TG/sec: 230.72, PP/sec: 44.18
+
+[11/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_11.jpg
+  ✓ PP: 1183, TG: 384
+  ✓ TTFT: 9.215s, TG/sec: 479.23, PP/sec: 128.38
+
+[12/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_12.jpg
+  ✓ PP: 1183, TG: 384
+  ✓ TTFT: 8.324s, TG/sec: 354.52, PP/sec: 142.13
+
+[13/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_13.jpg
+  ✓ PP: 1183, TG: 383
+  ✓ TTFT: 8.220s, TG/sec: 449.87, PP/sec: 143.92
+
+[14/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_14.jpg
+  ✓ PP: 1183, TG: 380
+  ✓ TTFT: 7.774s, TG/sec: 965.77, PP/sec: 152.18
+
+[15/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_15.jpg
+  ✓ PP: 1183, TG: 450
+  ✓ TTFT: 8.898s, TG/sec: 1652.60, PP/sec: 132.96
+
+[16/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_16.jpg
+  ✓ PP: 1183, TG: 190
+  ✓ TTFT: 12.547s, TG/sec: 395.40, PP/sec: 94.29
+
+[17/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_17.jpg
+  ✓ PP: 1183, TG: 195
+  ✓ TTFT: 4.911s, TG/sec: 320.92, PP/sec: 240.90
+
+[18/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_18.jpg
+  ✓ PP: 1183, TG: 445
+  ✓ TTFT: 18.258s, TG/sec: 706.94, PP/sec: 64.80
+
+[19/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_19.jpg
+  ✓ PP: 1183, TG: 509
+  ✓ TTFT: 13.701s, TG/sec: 1886.81, PP/sec: 86.34
+
+[20/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_20.jpg
+  ✓ PP: 1183, TG: 251
+  ✓ TTFT: 20.061s, TG/sec: 716.87, PP/sec: 58.97
+
+[21/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_21.jpg
+  ✓ PP: 1183, TG: 446
+  ✓ TTFT: 10.293s, TG/sec: 1556.70, PP/sec: 114.93
+
+[22/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_22.jpg
+  ✓ PP: 1183, TG: 452
+  ✓ TTFT: 13.043s, TG/sec: 2649.08, PP/sec: 90.70
+
+[23/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_23.jpg
+  ✓ PP: 1183, TG: 461
+  ✓ TTFT: 18.274s, TG/sec: 400.48, PP/sec: 64.74
+
+[24/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_24.jpg
+  ✓ PP: 1183, TG: 456
+  ✓ TTFT: 14.497s, TG/sec: 576.93, PP/sec: 81.61
+
+[25/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_25.jpg
+  ✓ PP: 1183, TG: 322
+  ✓ TTFT: 13.673s, TG/sec: 424.94, PP/sec: 86.52
+
+[26/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_26.jpg
+  ✓ PP: 1183, TG: 650
+  ✓ TTFT: 19.562s, TG/sec: 260.89, PP/sec: 60.48
+
+[27/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_27.jpg
+  ✓ PP: 1183, TG: 588
+  ✓ TTFT: 18.955s, TG/sec: 349.58, PP/sec: 62.41
+
+[28/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_28.jpg
+  ✓ PP: 1183, TG: 521
+  ✓ TTFT: 19.567s, TG/sec: 96.90, PP/sec: 60.46
+
+[29/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_29.jpg
+  ✓ PP: 1183, TG: 523
+  ✓ TTFT: 11.978s, TG/sec: 670.69, PP/sec: 98.76
+
+[30/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_30.jpg
+  ✓ PP: 1183, TG: 328
+  ✓ TTFT: 8.231s, TG/sec: 359.83, PP/sec: 143.72
+
+[31/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_31.jpg
+  ✓ PP: 1183, TG: 395
+  ✓ TTFT: 10.581s, TG/sec: 2405.66, PP/sec: 111.81
+
+[32/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_32.jpg
+  ✓ PP: 1183, TG: 579
+  ✓ TTFT: 15.037s, TG/sec: 734.12, PP/sec: 78.67
+
+[33/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_33.jpg
+  ✓ PP: 1183, TG: 514
+  ✓ TTFT: 16.559s, TG/sec: 501.08, PP/sec: 71.44
+
+[34/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_34.jpg
+  ✓ PP: 1183, TG: 385
+  ✓ TTFT: 10.395s, TG/sec: 2772.22, PP/sec: 113.80
+
+[35/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_35.jpg
+  ✓ PP: 1183, TG: 263
+  ✓ TTFT: 8.219s, TG/sec: 416.26, PP/sec: 143.94
+
+[36/108] Processing (individual): Day13-Phys1111_09_15_2025_Forces_page_36.jpg
+  ✓ PP: 1183, TG: 328
+  ✓ TTFT: 11.479s, TG/sec: 534.31, PP/sec: 103.05
+
+[37/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_1.jpg
+  ✓ PP: 1183, TG: 232
+  ✓ TTFT: 7.956s, TG/sec: 2418.82, PP/sec: 148.69
+
+[38/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_2.jpg
+  ✓ PP: 1183, TG: 154
+  ✓ TTFT: 6.598s, TG/sec: 3123.21, PP/sec: 179.30
+
+[39/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_3.jpg
+  ✓ PP: 1183, TG: 301
+  ✓ TTFT: 5.639s, TG/sec: 1335.12, PP/sec: 209.77
+
+[40/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_4.jpg
+  ✓ PP: 1183, TG: 562
+  ✓ TTFT: 17.046s, TG/sec: 1129.52, PP/sec: 69.40
+
+[41/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_5.jpg
+  ✓ PP: 1183, TG: 313
+  ✓ TTFT: 8.164s, TG/sec: 761.30, PP/sec: 144.90
+
+[42/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_6.jpg
+  ✓ PP: 1183, TG: 565
+  ✓ TTFT: 34.084s, TG/sec: 4487.25, PP/sec: 34.71
+
+[43/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_7.jpg
+  ✓ PP: 1183, TG: 380
+  ✓ TTFT: 13.300s, TG/sec: 1681.61, PP/sec: 88.95
+
+[44/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_8.jpg
+  ✓ PP: 1183, TG: 326
+  ✓ TTFT: 9.461s, TG/sec: 483.10, PP/sec: 125.04
+
+[45/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_9.jpg
+  ✓ PP: 1183, TG: 388
+  ✓ TTFT: 12.581s, TG/sec: 450.52, PP/sec: 94.03
+
+[46/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_10.jpg
+  ✓ PP: 1183, TG: 319
+  ✓ TTFT: 8.050s, TG/sec: 502.10, PP/sec: 146.96
+
+[47/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_11.jpg
+  ✓ PP: 1183, TG: 391
+  ✓ TTFT: 15.116s, TG/sec: 519.16, PP/sec: 78.26
+
+[48/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_12.jpg
+  ✓ PP: 1183, TG: 316
+  ✓ TTFT: 10.514s, TG/sec: 419.80, PP/sec: 112.52
+
+[49/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_13.jpg
+  ✓ PP: 1183, TG: 246
+  ✓ TTFT: 8.026s, TG/sec: 773.65, PP/sec: 147.39
+
+[50/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_14.jpg
+  ✓ PP: 1183, TG: 309
+  ✓ TTFT: 17.032s, TG/sec: 425.04, PP/sec: 69.46
+
+[51/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_15.jpg
+  ✓ PP: 1183, TG: 576
+  ✓ TTFT: 14.654s, TG/sec: 294.44, PP/sec: 80.73
+
+[52/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_16.jpg
+  ✓ PP: 1183, TG: 253
+  ✓ TTFT: 6.607s, TG/sec: 740.75, PP/sec: 179.06
+
+[53/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_17.jpg
+  ✓ PP: 1183, TG: 390
+  ✓ TTFT: 8.558s, TG/sec: 1067.99, PP/sec: 138.23
+
+[54/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_18.jpg
+  ✓ PP: 1183, TG: 455
+  ✓ TTFT: 10.830s, TG/sec: 559.57, PP/sec: 109.23
+
+[55/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_19.jpg
+  ✓ PP: 1183, TG: 458
+  ✓ TTFT: 12.073s, TG/sec: 514.51, PP/sec: 97.99
+
+[56/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_20.jpg
+  ✓ PP: 1183, TG: 386
+  ✓ TTFT: 12.802s, TG/sec: 299.06, PP/sec: 92.41
+
+[57/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_21.jpg
+  ✓ PP: 1183, TG: 188
+  ✓ TTFT: 6.332s, TG/sec: 605.18, PP/sec: 186.83
+
+[58/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_22.jpg
+  ✓ PP: 1183, TG: 263
+  ✓ TTFT: 9.949s, TG/sec: 501.47, PP/sec: 118.91
+
+[59/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_23.jpg
+  ✓ PP: 1183, TG: 382
+  ✓ TTFT: 17.189s, TG/sec: 849.57, PP/sec: 68.82
+
+[60/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_24.jpg
+  ✓ PP: 1183, TG: 447
+  ✓ TTFT: 12.511s, TG/sec: 948.25, PP/sec: 94.56
+
+[61/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_25.jpg
+  ✓ PP: 1183, TG: 471
+  ✓ TTFT: 9.251s, TG/sec: 496.54, PP/sec: 127.87
+
+[62/108] Processing (individual): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion_page_26.jpg
+  ✓ PP: 1183, TG: 589
+  ✓ TTFT: 10.730s, TG/sec: 758.39, PP/sec: 110.25
+
+[63/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_1.jpg
+  ✓ PP: 1183, TG: 301
+  ✓ TTFT: 6.766s, TG/sec: 2871.25, PP/sec: 174.85
+
+[64/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_2.jpg
+  ✓ PP: 1183, TG: 177
+  ✓ TTFT: 10.269s, TG/sec: 401.61, PP/sec: 115.20
+
+[65/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_3.jpg
+  ✓ PP: 1183, TG: 180
+  ✓ TTFT: 5.596s, TG/sec: 699.81, PP/sec: 211.41
+
+[66/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_4.jpg
+  ✓ PP: 1183, TG: 447
+  ✓ TTFT: 10.482s, TG/sec: 877.09, PP/sec: 112.85
+
+[67/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_5.jpg
+  ✓ PP: 1183, TG: 450
+  ✓ TTFT: 11.915s, TG/sec: 219.60, PP/sec: 99.29
+
+[68/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_6.jpg
+  ✓ PP: 1183, TG: 513
+  ✓ TTFT: 15.395s, TG/sec: 525.88, PP/sec: 76.84
+
+[69/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_7.jpg
+  ✓ PP: 1183, TG: 326
+  ✓ TTFT: 12.217s, TG/sec: 414.33, PP/sec: 96.84
+
+[70/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_8.jpg
+  ✓ PP: 1183, TG: 381
+  ✓ TTFT: 14.590s, TG/sec: 1296.55, PP/sec: 81.08
+
+[71/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_9.jpg
+  ✓ PP: 1183, TG: 586
+  ✓ TTFT: 14.371s, TG/sec: 747.87, PP/sec: 82.32
+
+[72/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_10.jpg
+  ✓ PP: 1183, TG: 323
+  ✓ TTFT: 9.330s, TG/sec: 745.79, PP/sec: 126.80
+
+[73/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_11.jpg
+  ✓ PP: 1183, TG: 323
+  ✓ TTFT: 10.928s, TG/sec: 603.55, PP/sec: 108.25
+
+[74/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_12.jpg
+  ✓ PP: 1183, TG: 389
+  ✓ TTFT: 19.265s, TG/sec: 546.89, PP/sec: 61.41
+
+[75/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_13.jpg
+  ✓ PP: 1183, TG: 389
+  ✓ TTFT: 19.083s, TG/sec: 413.84, PP/sec: 61.99
+
+[76/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_14.jpg
+  ✓ PP: 1183, TG: 455
+  ✓ TTFT: 15.216s, TG/sec: 612.57, PP/sec: 77.75
+
+[77/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_15.jpg
+  ✓ PP: 1183, TG: 460
+  ✓ TTFT: 21.920s, TG/sec: 102.04, PP/sec: 53.97
+
+[78/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_16.jpg
+  ✓ PP: 1183, TG: 389
+  ✓ TTFT: 17.224s, TG/sec: 101.95, PP/sec: 68.68
+
+[79/108] Processing (individual): Day15-Phys1111_09_19_2025_Connectedobjects_page_17.jpg
+  ✓ PP: 1183, TG: 640
+  ✓ TTFT: 26.179s, TG/sec: 187.86, PP/sec: 45.19
+
+[80/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_1.jpg
+  ✓ PP: 1183, TG: 368
+  ✓ TTFT: 10.322s, TG/sec: 634.31, PP/sec: 114.61
+
+[81/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_2.jpg
+  ✓ PP: 1183, TG: 235
+  ✓ TTFT: 6.300s, TG/sec: 769.53, PP/sec: 187.78
+
+[82/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_3.jpg
+  ✓ PP: 1183, TG: 238
+  ✓ TTFT: 8.823s, TG/sec: 1186.62, PP/sec: 134.09
+
+[83/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_4.jpg
+  ✓ PP: 1183, TG: 322
+  ✓ TTFT: 18.483s, TG/sec: 53.82, PP/sec: 64.00
+
+[84/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_5.jpg
+  ✓ PP: 1183, TG: 377
+  ✓ TTFT: 19.831s, TG/sec: 460.22, PP/sec: 59.65
+
+[85/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_6.jpg
+  ✓ PP: 1183, TG: 242
+  ✓ TTFT: 12.723s, TG/sec: 184.54, PP/sec: 92.98
+
+[86/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_7.jpg
+  ✓ PP: 1183, TG: 440
+  ✓ TTFT: 13.527s, TG/sec: 8395.78, PP/sec: 87.45
+
+[87/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_8.jpg
+  ✓ PP: 1183, TG: 317
+  ✓ TTFT: 14.425s, TG/sec: 237.25, PP/sec: 82.01
+
+[88/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_9.jpg
+  ✓ PP: 1183, TG: 395
+  ✓ TTFT: 16.099s, TG/sec: 361.38, PP/sec: 73.48
+
+[89/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_10.jpg
+  ✓ PP: 1183, TG: 313
+  ✓ TTFT: 7.098s, TG/sec: 1885.12, PP/sec: 166.66
+
+[90/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_11.jpg
+  ✓ PP: 1183, TG: 448
+  ✓ TTFT: 13.178s, TG/sec: 516.54, PP/sec: 89.77
+
+[91/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_12.jpg
+  ✓ PP: 1183, TG: 451
+  ✓ TTFT: 15.685s, TG/sec: 655.51, PP/sec: 75.42
+
+[92/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_13.jpg
+  ✓ PP: 1183, TG: 330
+  ✓ TTFT: 8.044s, TG/sec: 613.64, PP/sec: 147.07
+
+[93/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_14.jpg
+  ✓ PP: 1183, TG: 388
+  ✓ TTFT: 14.648s, TG/sec: 497.85, PP/sec: 80.76
+
+[94/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_15.jpg
+  ✓ PP: 1183, TG: 456
+  ✓ TTFT: 10.709s, TG/sec: 154.83, PP/sec: 110.46
+
+[95/108] Processing (individual): Day16-Phys1111_09_22_2025_Friction_page_16.jpg
+  ✓ PP: 1183, TG: 587
+  ✓ TTFT: 12.689s, TG/sec: 3323.41, PP/sec: 93.23
+
+[96/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_1.jpg
+  ✓ PP: 1183, TG: 425
+  ✓ TTFT: 8.240s, TG/sec: 11502.00, PP/sec: 143.57
+
+[97/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_2.jpg
+  ✓ PP: 1183, TG: 299
+  ✓ TTFT: 11.359s, TG/sec: 948.69, PP/sec: 104.15
+
+[98/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_3.jpg
+  ✓ PP: 1183, TG: 433
+  ✓ TTFT: 9.606s, TG/sec: 657.89, PP/sec: 123.15
+
+[99/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_4.jpg
+  ✓ PP: 1183, TG: 321
+  ✓ TTFT: 8.943s, TG/sec: 642.48, PP/sec: 132.28
+
+[100/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_5.jpg
+  ✓ PP: 1183, TG: 516
+  ✓ TTFT: 11.060s, TG/sec: 1555.69, PP/sec: 106.96
+
+[101/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_6.jpg
+  ✓ PP: 1183, TG: 979
+  ✓ TTFT: 18.446s, TG/sec: 12007.52, PP/sec: 64.13
+
+[102/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_7.jpg
+  ✓ PP: 1183, TG: 399
+  ✓ TTFT: 8.538s, TG/sec: 428.96, PP/sec: 138.55
+
+[103/108] Processing (individual): Day17-Phys1111_09_24_2025_Force_practiceI_page_8.jpg
+  ✓ PP: 1183, TG: 840
+  ✓ TTFT: 19.203s, TG/sec: 1672.50, PP/sec: 61.61
+
+[104/108] Processing (batch, 30 images): Day13-Phys1111_09_15_2025_Forces.pdf
+  ✓ Batch processed: 30 images
+  ✓ PP: 27479, TG: 1306
+  ✓ TTFT: 45.141s, TG/sec: 389.95, PP/sec: 608.74
+
+[105/108] Processing (batch, 19 images): Day14-Phys1111_09_17_2025_Newton’sLawsofMotion.pdf
+  ✓ Batch processed: 19 images
+  ✓ PP: 17469, TG: 1429
+  ✓ TTFT: 71.652s, TG/sec: 220.40, PP/sec: 243.80
+
+[106/108] Processing (batch, 14 images): Day15-Phys1111_09_19_2025_Connectedobjects.pdf
+  ✓ Batch processed: 14 images
+  ✓ PP: 12919, TG: 1151
+  ✓ TTFT: 47.983s, TG/sec: 491.63, PP/sec: 269.24
+
+[107/108] Processing (batch, 13 images): Day16-Phys1111_09_22_2025_Friction.pdf
+  ✓ Batch processed: 13 images
+  ✓ PP: 12009, TG: 872
+  ✓ TTFT: 36.930s, TG/sec: 388.23, PP/sec: 325.18
+
+[108/108] Processing (batch, 4 images): Day17-Phys1111_09_24_2025_Force_practiceI.pdf
+  ✓ Batch processed: 4 images
+  ✓ PP: 3819, TG: 1091
+  ✓ TTFT: 39.643s, TG/sec: 407.77, PP/sec: 96.33
+
+✓ Updated database saved to: materials/processed_materials.db
+
+================================================================================
+SUMMARY
+================================================================================
+Total materials: 108
+Successfully processed: 108
+Errors: 0
+Batch size: 10
+Total batches: 1 (single inference)
+
+================================================================================
+PERFORMANCE METRICS
+================================================================================
+
+Metric                            
+-------------------------------------------------------
+Total requests                 108
+Total PP tokens                195544
+Total TG tokens                46903
+Total time (s)                 1623.56
+Total generation time (s)      103.24
+Avg TTFT (s)                   14.077
+Avg TG/sec (tokens/s)          1231.72
+Avg PP/sec (tokens/s)          119.53
