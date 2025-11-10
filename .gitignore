@@ -20,3 +20,6 @@ materials/
 
 # Server logs
 server_detail
+
+# Results
+results/*
