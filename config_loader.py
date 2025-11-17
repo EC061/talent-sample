@@ -66,35 +66,6 @@ def as_env_dict(cfg: Dict[str, Any], model_type: str = 'vlm') -> Dict[str, str]:
     env['SERVER_HOST'] = str(_deep_get(cfg, 'server.host', '0.0.0.0'))
     env['SERVER_PORT'] = str(_deep_get(cfg, 'server.port', 8000))
 
-    # vLLM - common settings
-    tp_size = _deep_get(cfg, 'vllm.tensor_parallel_size', None)
-    if tp_size is not None and str(tp_size).strip() != '':
-        env['TENSOR_PARALLEL_SIZE'] = str(tp_size)
-    cuda_devices = _deep_get(cfg, 'vllm.cuda_devices', None)
-    if cuda_devices is not None and str(cuda_devices).strip() != '':
-        env['CUDA_DEVICES'] = str(cuda_devices)
-    env['VLLM_WORKER_MULTIPROC_METHOD'] = str(_deep_get(cfg, 'vllm.worker_multiproc_method', 'spawn'))
-    env['VLLM_USE_FLASHINFER_MOE_FP16'] = '1' if bool(_deep_get(cfg, 'vllm.use_flashinfer_moe_fp16', True)) else '0'
-    env['PYTORCH_CUDA_ALLOC_CONF'] = str(_deep_get(cfg, 'vllm.pytorch_cuda_alloc_conf', 'expandable_segments:True'))
-
-    # vLLM - model-specific settings
-    if model_type == 'llm':
-        env['VLLM_MAX_MODEL_LEN'] = str(_deep_get(cfg, 'vllm.llm.max_model_len', 32768))
-        env['VLLM_MAX_NUM_SEQS'] = str(_deep_get(cfg, 'vllm.llm.max_num_seqs', 512))
-        env['VLLM_GPU_MEMORY_UTILIZATION'] = str(_deep_get(cfg, 'vllm.llm.gpu_memory_utilization', 0.9))
-        env['VLLM_SEED'] = str(_deep_get(cfg, 'vllm.llm.seed', 0))
-        env['VLLM_ENABLE_EXPERT_PARALLEL'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.enable_expert_parallel', True)) else 'false'
-        env['VLLM_SWAP_SPACE'] = str(_deep_get(cfg, 'vllm.llm.swap_space', 16))
-        env['VLLM_TRUST_REMOTE_CODE'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.trust_remote_code', True)) else 'false'
-        env['VLLM_DISABLE_LOG_REQUESTS'] = 'true' if bool(_deep_get(cfg, 'vllm.llm.disable_log_requests', True)) else 'false'
-    else:  # vlm
-        env['VLLM_MAX_MODEL_LEN'] = str(_deep_get(cfg, 'vllm.vlm.max_model_len', 131072))
-        env['VLLM_MAX_NUM_SEQS'] = str(_deep_get(cfg, 'vllm.vlm.max_num_seqs', 2))
-        env['VLLM_GPU_MEMORY_UTILIZATION'] = str(_deep_get(cfg, 'vllm.vlm.gpu_memory_utilization', 0.90))
-        env['VLLM_SEED'] = str(_deep_get(cfg, 'vllm.vlm.seed', 1234))
-        env['VLLM_MM_ENCODER_TP_MODE'] = str(_deep_get(cfg, 'vllm.vlm.mm_encoder_tp_mode', 'data'))
-        env['VLLM_ENABLE_EXPERT_PARALLEL'] = 'true' if bool(_deep_get(cfg, 'vllm.vlm.enable_expert_parallel', True)) else 'false'
-
     return env
 
 
