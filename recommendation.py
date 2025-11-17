@@ -11,7 +11,9 @@ import sqlite3
 import time
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
+from datetime import datetime
 from openai import OpenAI
+from openai_cost_calculator import estimate_cost_typed
 from config_loader import load_config
 
 
@@ -30,20 +32,20 @@ class MaterialRecommendationSystem:
 
         Args:
             api_base: Base URL for the OpenAI-compatible API (defaults from config.yml)
-            api_key: API key (defaults from config.yml, use "EMPTY" for local servers)
+            api_key: API key (defaults from config.yml)
             model_name: Name of the LLM model to use (defaults from config.yml)
             timeout: Request timeout in seconds (defaults from config.yml)
         """
         # Read configuration from YAML
         cfg = load_config()
-        self.platform = cfg.get('api', {}).get('platform', 'vllm').lower()
+        self.platform = cfg.get('api', {}).get('platform', 'openai').lower()
         self.cfg = cfg
         
         # Get platform-specific API configuration
         api_config = cfg.get('api', {}).get(self.platform, {})
 
         # Determine optional service tier for OpenAI platform
-        service_tier = api_config.get("service_tier") if self.platform == 'openai' else None
+        service_tier = api_config.get("service_tier")
         if isinstance(service_tier, str):
             service_tier = service_tier.strip().lower()
         self.service_tier = service_tier or None
@@ -52,31 +54,23 @@ class MaterialRecommendationSystem:
         if api_base is None:
             api_base = (api_config.get("base_url") or "").strip()
             if not api_base:
-                if self.platform == 'openai':
-                    api_base = 'https://api.openai.com/v1'
-                else:
-                    server_host = cfg.get("server", {}).get("host", "0.0.0.0")
-                    server_port = cfg.get("server", {}).get("port", 8000)
-                    api_base = f"http://{server_host}:{server_port}/v1"
+                api_base = 'https://api.openai.com/v1'
 
         if api_key is None:
-            api_key = api_config.get("key", "EMPTY" if self.platform == 'vllm' else "")
+            api_key = api_config.get("key", "")
 
         if model_name is None:
-            if self.platform == 'openai':
-                model_name = api_config.get('llm_model', 'gpt-4o')
-            else:
-                model_name = (
-                    cfg.get("model", {})
-                    .get("llm", {})
-                    .get("name", "Qwen/Qwen3-30B-A3B-Instruct-2507")
-                )
+            model_name = api_config.get('llm_model', 'gpt-4o')
 
         if timeout is None:
             timeout = int(cfg.get("api", {}).get("timeout", 3600))
 
         self.client = OpenAI(api_key=api_key, base_url=api_base, timeout=timeout)
         self.model_name = model_name
+        
+        # Initialize logging directory
+        self.log_dir = Path("logs")
+        self.log_dir.mkdir(exist_ok=True)
 
     def load_materials_from_db(self, db_path: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -171,34 +165,104 @@ class MaterialRecommendationSystem:
 
     def _prepare_structured_output(self, schema: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
         """
-        Prepare structured output parameters based on platform.
+        Prepare structured output parameters for OpenAI API.
         
         Args:
             schema: JSON schema dictionary
             
         Returns:
-            Tuple of (extra_body, response_format) where one will be None based on platform
+            Tuple of (extra_body, response_format) where extra_body is None
         """
-        if self.platform == 'openai':
-            # OpenAI format: use response_format parameter
-            schema_name = None
-            if isinstance(schema, dict):
-                schema_name = schema.get("title")
-            if not schema_name:
-                schema_name = "structured_output"
-            response_format = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": schema_name,
-                    "schema": schema,
-                    "strict": True
-                }
+        # OpenAI format: use response_format parameter
+        schema_name = None
+        if isinstance(schema, dict):
+            schema_name = schema.get("title")
+        if not schema_name:
+            schema_name = "structured_output"
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": schema_name,
+                "schema": schema,
+                "strict": True
             }
-            return None, response_format
-        else:
-            # vLLM format: use guided_json in extra_body
-            extra_body = {"guided_json": schema}
-            return extra_body, None
+        }
+        return None, response_format
+    
+    def _log_to_markdown(
+        self,
+        step: str,
+        prompt: str,
+        content: str,
+        metrics: Dict[str, Any],
+        additional_info: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Log API request and response to a markdown file.
+        
+        Args:
+            step: Step name (e.g., "step1_file_selection", "step2_page_selection")
+            prompt: The prompt sent to the API
+            content: The response content (raw JSON string)
+            metrics: Dictionary containing token usage and cost metrics
+            additional_info: Optional dictionary with additional information
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        log_file = self.log_dir / f"recommendation_{step}_{timestamp}.md"
+        
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write(f"# Recommendation System Log - {step.replace('_', ' ').title()}\n\n")
+            f.write(f"**Timestamp:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"**Model:** {self.model_name}\n")
+            f.write(f"**Step:** {step}\n\n")
+            
+            f.write("## Request Details\n\n")
+            f.write("### Prompt\n\n")
+            f.write("```\n")
+            f.write(prompt)
+            f.write("\n```\n\n")
+            
+            if additional_info:
+                f.write("### Additional Information\n\n")
+                for key, value in additional_info.items():
+                    if isinstance(value, dict):
+                        f.write(f"- **{key}:**\n")
+                        for k, v in value.items():
+                            f.write(f"  - {k}: {v}\n")
+                    else:
+                        f.write(f"- **{key}:** {value}\n")
+                f.write("\n")
+            
+            f.write("## Response\n\n")
+            f.write("### Content\n\n")
+            f.write("```json\n")
+            try:
+                # Try to format as JSON if it's valid JSON
+                parsed = json.loads(content)
+                f.write(json.dumps(parsed, indent=2, ensure_ascii=False))
+            except:
+                # Otherwise just write the raw content
+                f.write(content)
+            f.write("\n```\n\n")
+            
+            f.write("## Token Usage & Metrics\n\n")
+            f.write("| Metric | Value |\n")
+            f.write("|--------|-------|\n")
+            f.write(f"| Prompt Tokens | {metrics.get('prompt_tokens', 0)} |\n")
+            f.write(f"| Completion Tokens | {metrics.get('completion_tokens', 0)} |\n")
+            f.write(f"| Total Tokens | {metrics.get('total_tokens', 0)} |\n")
+            f.write(f"| Total Time (s) | {metrics.get('total_time', 0):.3f} |\n")
+            f.write(f"| Time to First Token (s) | {metrics.get('ttft', 0):.3f} |\n")
+            f.write(f"| Generation Time (s) | {metrics.get('generation_time', 0):.3f} |\n")
+            f.write(f"| Prompt Processing Rate (tokens/s) | {metrics.get('pp_per_sec', 0):.2f} |\n")
+            f.write(f"| Token Generation Rate (tokens/s) | {metrics.get('tg_per_sec', 0):.2f} |\n")
+            
+            if 'total_cost' in metrics:
+                f.write(f"| **Total Cost ($)** | **{metrics.get('total_cost', 0):.6f}** |\n")
+                f.write(f"| Input Cost ($) | {metrics.get('input_cost', 0):.6f} |\n")
+                f.write(f"| Output Cost ($) | {metrics.get('output_cost', 0):.6f} |\n")
+            
+            f.write("\n")
 
     def _extract_page_number(self, filename: str) -> int:
         """
@@ -243,49 +307,14 @@ class MaterialRecommendationSystem:
         Returns:
             Dictionary with 'content' (parsed JSON) and 'metrics'
         """
-        # Use platform-specific config values if not provided
-        # For OpenAI, don't use any generation configs - only use explicitly provided parameters
-        if self.platform == 'openai':
-            # For OpenAI, keep None values as None - don't use any config defaults
-            top_p_val = None
-            top_k_val = None
-        else:
-            # For vLLM, use config values
-            gen_config = self.cfg.get("generation", {}).get(self.platform, {}).get("llm", {})
-            if temperature is None:
-                temperature = float(gen_config.get("temperature", 0.3))
-            if presence_penalty is None:
-                presence_penalty = float(gen_config.get("presence_penalty", 0.0))
-            if max_tokens is None:
-                max_tokens = int(gen_config.get("max_tokens", 1024))
-            
-            # Only include top_p and top_k for vLLM platform
-            top_p_val = None
-            top_k_val = None
-            if top_p is None:
-                top_p_val = float(gen_config.get("top_p", 0.9))
-            else:
-                top_p_val = top_p
-            if top_k is None:
-                top_k_val = int(gen_config.get("top_k", 10))
-            else:
-                top_k_val = top_k
-
         messages = [{"role": "user", "content": prompt}]
 
         try:
             start_time = time.time()
-            extra_body = {}
             response_format = None
             
-            # Only add top_k to extra_body for vLLM
-            if self.platform == 'vllm' and top_k_val is not None:
-                extra_body["top_k"] = top_k_val
-            
             if guided_json is not None:
-                struct_extra_body, struct_response_format = self._prepare_structured_output(guided_json)
-                if struct_extra_body:
-                    extra_body.update(struct_extra_body)
+                _, struct_response_format = self._prepare_structured_output(guided_json)
                 if struct_response_format:
                     response_format = struct_response_format
 
@@ -296,30 +325,18 @@ class MaterialRecommendationSystem:
                 "stream_options": {"include_usage": True},
             }
             
-            # Only include generation parameters for vLLM or if explicitly provided for OpenAI
-            if self.platform == 'vllm':
+            # For OpenAI, only include if not None/default
+            if temperature is not None:
                 create_kwargs["temperature"] = temperature
+            if presence_penalty is not None:
                 create_kwargs["presence_penalty"] = presence_penalty
+            if max_tokens is not None:
                 create_kwargs["max_tokens"] = max_tokens
-                if top_p_val is not None:
-                    create_kwargs["top_p"] = top_p_val
-            else:
-                # For OpenAI, only include if not None/default
-                if temperature is not None:
-                    create_kwargs["temperature"] = temperature
-                if presence_penalty is not None:
-                    create_kwargs["presence_penalty"] = presence_penalty
-                if max_tokens is not None:
-                    create_kwargs["max_tokens"] = max_tokens
-            
-            # Only include extra_body if it has content
-            if extra_body:
-                create_kwargs["extra_body"] = extra_body
             
             if response_format is not None:
                 create_kwargs["response_format"] = response_format
 
-            if self.platform == 'openai' and self.service_tier is not None:
+            if self.service_tier is not None:
                 create_kwargs["service_tier"] = self.service_tier
 
             stream = self.client.chat.completions.create(**create_kwargs)
@@ -359,6 +376,30 @@ class MaterialRecommendationSystem:
                 end_time - first_token_time if first_token_time else total_time
             )
 
+            # Calculate cost using openai-cost-calculator
+            cost_details = None
+            if prompt_tokens > 0 or completion_tokens > 0:
+                # Create a mock response object for cost calculation
+                class MockUsage:
+                    def __init__(self, prompt_tokens, completion_tokens):
+                        self.prompt_tokens = prompt_tokens
+                        self.completion_tokens = completion_tokens
+                        self.total_tokens = prompt_tokens + completion_tokens
+                
+                class MockResponse:
+                    def __init__(self, model, usage):
+                        self.model = model
+                        self.usage = usage
+                
+                mock_usage = MockUsage(prompt_tokens, completion_tokens)
+                mock_response = MockResponse(self.model_name, mock_usage)
+                try:
+                    cost_details = estimate_cost_typed(mock_response)
+                except Exception as e:
+                    # If cost calculation fails, continue without cost info
+                    if verbose:
+                        print(f"Warning: Could not calculate cost: {e}")
+
             # Calculate metrics
             metrics = {
                 "prompt_tokens": prompt_tokens,
@@ -372,6 +413,14 @@ class MaterialRecommendationSystem:
                 if generation_time > 0
                 else 0,
             }
+            
+            # Add cost information to metrics if available
+            if cost_details:
+                # CostBreakdown has: prompt_cost_uncached, prompt_cost_cached, completion_cost, total_cost
+                # Map to input_cost (total prompt cost) and output_cost (completion cost)
+                metrics['input_cost'] = float(cost_details.prompt_cost_uncached + cost_details.prompt_cost_cached)
+                metrics['output_cost'] = float(cost_details.completion_cost)
+                metrics['total_cost'] = float(cost_details.total_cost)
 
             if verbose:
                 print(
@@ -380,6 +429,10 @@ class MaterialRecommendationSystem:
                 print(
                     f"  ✓ TTFT: {metrics['ttft']:.3f}s, TG/sec: {metrics['tg_per_sec']:.2f}, PP/sec: {metrics['pp_per_sec']:.2f}"
                 )
+                if 'total_cost' in metrics:
+                    print(
+                        f"  ✓ Cost: ${metrics['total_cost']:.6f} (Input: ${metrics['input_cost']:.6f}, Output: ${metrics['output_cost']:.6f})"
+                    )
 
             # Parse JSON response
             try:
@@ -497,6 +550,22 @@ Analyze the question and the student's misconception, then select the most relev
 
         selected_file = result["content"]["selected_file"]
         reasoning = result["content"]["reasoning"]
+        
+        # Log to markdown file
+        self._log_to_markdown(
+            step="step1_file_selection",
+            prompt=full_prompt,
+            content=result["raw_content"],
+            metrics=result["metrics"],
+            additional_info={
+                "Question": question,
+                "Wrong Answer": wrong_answer,
+                "Correct Answer": correct_answer if correct_answer else "Not provided",
+                "Selected File": selected_file,
+                "Reasoning": reasoning,
+                "Number of Files Available": len(materials_data)
+            }
+        )
 
         if verbose:
             print(f"\n✓ Selected File: {selected_file}")
@@ -614,6 +683,24 @@ Analyze the question and the student's misconception, then select a focused rang
         start_page = result["content"]["start_page"]
         end_page = result["content"]["end_page"]
         reasoning = result["content"]["reasoning"]
+        
+        # Log to markdown file
+        self._log_to_markdown(
+            step="step2_page_selection",
+            prompt=full_prompt,
+            content=result["raw_content"],
+            metrics=result["metrics"],
+            additional_info={
+                "Question": question,
+                "Wrong Answer": wrong_answer,
+                "Correct Answer": correct_answer if correct_answer else "Not provided",
+                "Selected File": selected_file,
+                "Start Page": start_page,
+                "End Page": end_page,
+                "Reasoning": reasoning,
+                "Number of Pages Available": len(needed_pages)
+            }
+        )
 
         # Validate page range
         page_numbers = [p["page_number"] for p in needed_pages]
@@ -736,6 +823,9 @@ Analyze the question and the student's misconception, then select a focused rang
             step2_metrics = recommendation["step2"]["metrics"]
             total_time = step1_metrics["total_time"] + step2_metrics["total_time"]
             total_tokens = step1_metrics["total_tokens"] + step2_metrics["total_tokens"]
+            total_cost = step1_metrics.get("total_cost", 0) + step2_metrics.get("total_cost", 0)
+            total_input_cost = step1_metrics.get("input_cost", 0) + step2_metrics.get("input_cost", 0)
+            total_output_cost = step1_metrics.get("output_cost", 0) + step2_metrics.get("output_cost", 0)
             print(f"Total Time: {total_time:.2f}s")
             print(f"Total Tokens: {total_tokens}")
             print(
@@ -744,5 +834,17 @@ Analyze the question and the student's misconception, then select a focused rang
             print(
                 f"Step 2 - Page Selection: {step2_metrics['total_time']:.2f}s, {step2_metrics['total_tokens']} tokens"
             )
+            if total_cost > 0:
+                print(f"Total Cost: ${total_cost:.6f}")
+                print(f"Total Input Cost: ${total_input_cost:.6f}")
+                print(f"Total Output Cost: ${total_output_cost:.6f}")
+                if 'total_cost' in step1_metrics:
+                    print(
+                        f"Step 1 Cost: ${step1_metrics['total_cost']:.6f}"
+                    )
+                if 'total_cost' in step2_metrics:
+                    print(
+                        f"Step 2 Cost: ${step2_metrics['total_cost']:.6f}"
+                    )
 
         return recommendation

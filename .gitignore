@@ -21,5 +21,8 @@ materials/
 # Server logs
 server_detail
 
+# API logs
+logs/
+
 # Results
 results/*
